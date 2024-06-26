@@ -4,7 +4,7 @@ import { TouchableOpacity } from 'react-native-gesture-handler'
 import { useNavigation } from '@react-navigation/native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
-
+//needs login, cart on top. store, about, home in nav bar
 export default function Home() {
   const nav=useNavigation();
   return (

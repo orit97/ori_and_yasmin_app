@@ -17,17 +17,12 @@ const Stack=createStackNavigator();
 
 export default function App() {
   return (
-<NavigationContainer>
-	<Stack.Navigator>
-<Stack.Screen name="Home" component={Home} />
-<Stack.Screen name="About" component={About} />
-<Stack.Screen name="Register" component={Register} />
-<Stack.Screen name="Login" component={Login} />
-<Stack.Screen name="Store" component={Store} />
-<Stack.Screen name="Admin" component={Admin} />
-<Stack.Screen name="Cart" component={Cart} />
-</Stack.Navigator>
-</NavigationContainer>
+
+    <View>
+      <Text>
+        jjjjj
+      </Text>
+    </View>
 
   );
 }
@@ -40,3 +35,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 });
+/*
+<NavigationContainer>
+	<Stack.Navigator>
+<Stack.Screen name="Home" component={Home} />
+<Stack.Screen name="About" component={About} />
+<Stack.Screen name="Register" component={Register} />
+<Stack.Screen name="Login" component={Login} />
+<Stack.Screen name="Store" component={Store} />
+<Stack.Screen name="Admin" component={Admin} />
+<Stack.Screen name="Cart" component={Cart} />
+</Stack.Navigator>
+</NavigationContainer>
+ */
