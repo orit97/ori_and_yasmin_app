@@ -12,6 +12,7 @@ import Login from './pages/Login';
 import Store from './pages/Store';
 import Admin from './pages/Admin';
 import Cart from './pages/Cart';
+import React from 'react';
 
 const Stack=createStackNavigator();
 
