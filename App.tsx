@@ -13,33 +13,25 @@ import Store from './pages/Store';
 import Admin from './pages/Admin';
 import Cart from './pages/Cart';
 import React from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-const Stack=createStackNavigator();
+const Stack = createStackNavigator();
 
 export default function App() {
   return (
-
-    // <View style={styles.container}>
-    //   <Text>
-    //     kjjjjjjjjjjjjjjjkm
-    //   </Text>
-    // </View>
-
-<NavigationContainer>
-	<Stack.Navigator>
-<Stack.Screen name="Home" component={Home} />
-<Stack.Screen name="About" component={About} />
-<Stack.Screen name="Login" component={Login} />
-<Stack.Screen name="Register" component={Register} />
-<Stack.Screen name="Store" component={Store} />
-<Stack.Screen name="Admin" component={Admin} />
-<Stack.Screen name="Cart" component={Cart} />
-</Stack.Navigator>
-</NavigationContainer>
- 
-
-
-
+    <SafeAreaView style={styles.container}>
+    <NavigationContainer>
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="Home" component={Home} />
+          <Stack.Screen name="About" component={About} />
+          <Stack.Screen name="Register" component={Register} />
+          <Stack.Screen name="Login" component={Login} />
+          <Stack.Screen name="Store" component={Store} />
+          <Stack.Screen name="Admin" component={Admin} />
+          <Stack.Screen name="Cart" component={Cart} />
+        </Stack.Navigator>
+    </NavigationContainer>
+    </SafeAreaView>
   );
 }
 
@@ -47,8 +39,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
+    
   },
 });
-
