@@ -1,8 +1,8 @@
 import { StyleSheet, Text, View, Image, TouchableOpacity, TextInput } from 'react-native';
 import React from 'react';
-import { Link } from '@react-navigation/native';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/FontAwesome'; // Import FontAwesome icons
+import HamburgerMenu from '../components/HamburgerMenu';
 
 export default function Navbar() {
   const navigation = useNavigation();
@@ -10,9 +10,9 @@ export default function Navbar() {
   return (
     <View style={styles.container}>
       {/* Logo (Image) */}
-      <Link to="/">
+      <TouchableOpacity onPress={() => navigation.navigate('Home')}>
         <Image source={require('../Images/logo.jpg')} style={styles.logo} />
-      </Link>
+      </TouchableOpacity>
 
       {/* Search Bar (Input) */}
       <View style={styles.searchBarContainer}>
@@ -30,26 +30,28 @@ export default function Navbar() {
         <TouchableOpacity onPress={() => navigation.navigate('Bag')}>
           <Icon name="shopping-bag" size={24} style={styles.icon} />
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigation.toggleDrawer()}>
-          <Icon name="bars" size={24} style={styles.icon} />
-        </TouchableOpacity>
+<TouchableOpacity onPress={() => navigation.navigate('HamburgerMenu')}>
+  <Icon name="bars" size={24} style={styles.icon} />
+</TouchableOpacity>
+
       </View>
     </View>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 15,
-    backgroundColor: '#A86471',
-    height: 120,
+    backgroundColor: '#BDAE9A',
+    height: 130,
     justifyContent: 'space-between',
     paddingVertical: 10,
-    paddingTop: 50,
-    paddingBottom: 10,
- },
+    paddingTop: 60,
+    paddingBottom: 20,
+  },
   logo: {
     width: 55,
     height: 55,
