@@ -1,34 +1,36 @@
-import { StyleSheet, Text, View, Image } from 'react-native';
-import React from 'react';
-import { TouchableOpacity } from 'react-native-gesture-handler';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { useNavigation } from '@react-navigation/native';
+import { StyleSheet, Text, View, Image, TouchableOpacity } from 'react-native';
+import React from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Navbar from '../components/NavBar';
 import { createStackNavigator } from '@react-navigation/stack';
-// import store from '../pages/Store';
-
 
 const Stack = createStackNavigator();
 
-import backgroundImage from '../Images/background.jpg';
+// Define the navigation types
+type RootStackParamList = {
+  Home: undefined;
+  Store: undefined;
+};
+
+type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
 
 export default function Home() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<HomeScreenNavigationProp>();
 
   return (
     <>
       <Navbar />
       <SafeAreaView style={styles.container}>
         <View style={styles.background}>
-          <Image source={backgroundImage} style={styles.backgroundImage} />
-          {/* Linear Gradient Overlay */}
+          <Image source={require('../assets/Images/background.jpg')} style={styles.backgroundImage} />
           <View style={styles.gradientOverlay} />
         </View>
         <View style={styles.content}>
           <Text style={styles.title}>Adam's Art</Text>
           <Text style={styles.tagline}>Discover unique and inspiring artwork</Text>
 
-          {/* Call to action buttons */}
           <View style={styles.buttonContainer}>
             <TouchableOpacity
               onPress={() => navigation.navigate('Store')}
@@ -36,16 +38,13 @@ export default function Home() {
             >
               <Text style={styles.buttonText}>To the Store</Text>
             </TouchableOpacity>
-
           </View>
-          {/* Add a footer section here */}
-
         </View>
       </SafeAreaView>
-
     </>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {

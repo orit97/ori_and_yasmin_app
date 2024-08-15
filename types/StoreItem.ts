@@ -1,4 +1,3 @@
-
 export type StoreItem = {
     id: number;
     name: string;
@@ -10,5 +9,8 @@ export type StoreItem = {
     price: number;
     discount?: number; 
     category: string; 
+    isFavorite?: boolean; // Add this field to manage favorite status
+  };
   
-}
+  export type SortableKeys = keyof Pick<StoreItem, 'price' | 'name'>;
+  

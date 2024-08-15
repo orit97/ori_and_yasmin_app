@@ -1,144 +1,202 @@
-import { StyleSheet, Text, View, FlatList, TouchableOpacity, Image } from 'react-native';
-import React, { useState } from 'react';
+import { StyleSheet, Text, View, FlatList, TouchableOpacity, Image, Modal, TouchableWithoutFeedback } from 'react-native';
+import React, { useState, useEffect } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import Navbar from '../components/NavBar';
-import Icon from 'react-native-vector-icons/FontAwesome'; // Import FontAwesome icons
+import Icon from 'react-native-vector-icons/FontAwesome';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ImageSourcePropType } from 'react-native';
 
 // Interface for Product data type
 interface Product {
-  [x: string]: any;
   id: number;
   name: string;
   shortDesc: string;
   longDesc?: string;
-  imag: string;
+  imag: ImageSourcePropType;
   minQty: number;
   currQty: number;
   price: number;
   discount?: number;
   category: string;
+  isLiked?: boolean;
 }
 
-const mockProducts = [ // Replace with your actual product data
-  {
-    id: 1,
-    name: ' The Starry Night',
-    shortDesc: 'A replica of Van Gogh\'s masterpiece',
-    imag: 'https://images.unsplash.com/photo-1646988423425-bc236bc449bd?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NjR8fGFydGlzdHxlbnwwfHwwfHx8Mg%3D%3D', // Replace with your image URL
-    minQty: 1,
-    currQty: 10,
-    price: 99.99,
-    category: 'Paintings',
-  },
-  {
-    id: 2,
-    name: 'Thinker Statue',
-    shortDesc: 'A replica of Rodin\'s iconic sculpture',
-    imag: 'https://images.unsplash.com/photo-1589996448606-27d38c70f3bc?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nzl8fGFydGlzdHxlbnwwfHwwfHx8Mg%3D%3D', // Replace with your image URL
-    minQty: 1,
-    currQty: 5,
-    price: 149.99,
-    category: 'Sculptures',
-  },
-  {
-    id: 3,
-    name: 'The Persistence of Memory',
-    shortDesc: 'A photograph of Rembrandt\'s Persistence of Memory',
-    imag: 'https://images.unsplash.com/photo-1634393295821-70a0dea57209?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8ODZ8fGFydGlzdHxlbnwwfHwwfHx8Mg%3D%3D', // Replace with your image URL
-    minQty: 1,
-    currQty: 20,
-    price: 79.99,
-    category: 'Photographs',
-  },
-  {
-    id: 4,
-    name: 'The Last Supper ',
-    shortDesc: 'A drawing of the Last Supper by Johannes Vermeer named "The Last Supper" in 1665 ',  
-    imag: 'https://images.unsplash.com/photo-1658303033408-ff2a7e39a554?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8ODF8fGFydGlzdHxlbnwwfHwwfHx8Mg%3D%3D', // Replace with your image URL
-    minQty: 1,
-    currQty: 15,
-    price: 39.99,
-    category: 'Drawings',
-  },
-
+const mockProducts: Product[] = [
+  { id: 1, name: "Ocean", shortDesc: "water colors", longDesc: "", imag: require('../assets/Images/Ocean.jpg'), minQty: 1, currQty: 1, price: 150, discount: 15, category: "water colors" },
+  { id: 2, name: "Pink storm", shortDesc: "oil colors", longDesc: "", imag: require('../assets/Images/pink.jpg'), minQty: 1, currQty: 1, price: 200,  category: "oil colors" },
+  { id: 3, name: "Rainbow", shortDesc: "oil colors", longDesc: "", imag: require('../assets/Images/rainbow.jpg'), minQty: 1, currQty: 1, price: 180, discount: 10, category: "oil colors" },
+  { id: 4, name: "Childhood", shortDesc: "water colors", longDesc: "", imag: require('../assets/Images/childhood.jpg'), minQty: 1, currQty: 1, price: 120, discount: 5, category: "water colors" },
+  { id: 8, name: "Sad Storm", shortDesc: "oil colors", longDesc: "", imag: require('../assets/Images/obb.jpg'), minQty: 1, currQty: 1, price: 170, discount: 12, category: "abstract" },
+  { id: 10, name: "Yellow Storm", shortDesc: "oil colors", longDesc: "", imag: require('../assets/Images/yellow.jpg'), minQty: 1, currQty: 1, price: 140, category: "abstract" },
+  { id: 11, name: "Pain", shortDesc: "emotional art", longDesc: "", imag: require('../assets/Images/pain.jpg'), minQty: 1, currQty: 1, price: 190, discount: 18, category: "abstract" },
+  { id: 12, name: "Mysterious Woman", shortDesc: "portrait", longDesc: "", imag: require('../assets/Images/women.jpg'), minQty: 1, currQty: 1, price: 210,  category: "portrait" },
+  { id: 13, name: "Waves", shortDesc: "water colors", longDesc: "", imag: require('../assets/Images/waves.jpg'), minQty: 1, currQty: 1, price: 160, discount: 14, category: "water colors" },
+  { id: 14, name: "Kitty Cat", shortDesc: "animal art", longDesc: "", imag: require('../assets/Images/cat.jpg'), minQty: 1, currQty: 1, price: 125, discount: 9, category: "animals" },
+  { id: 15, name: "Love of Fox Mom", shortDesc: "animal art", longDesc: "", imag: require('../assets/Images/fox.jpg'), minQty: 1, currQty: 1, price: 200,  category: "animals" },
+  { id: 16, name: "Blue Storm", shortDesc: "oil colors", longDesc: "", imag: require('../assets/Images/blue.jpg'), minQty: 1, currQty: 1, price: 180, discount: 15, category: "abstract" },
+  { id: 17, name: "Forest", shortDesc:"oil colors", longDesc: "", imag: require('../assets/Images/trees.jpg'), minQty: 1, currQty: 1, price: 150,  category: "abstract" },
+  { id: 18, name: "Lonly fish", shortDesc: "water colors", longDesc: "", imag: require('../assets/Images/fish.jpg'), minQty: 1, currQty: 1, price: 120,  category: "water colors" },
 ];
 
+import { StackNavigationProp } from '@react-navigation/stack';
+
+type RootStackParamList = {
+  Store: undefined;
+  Product: { item: Product };
+};
+
+type StoreScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Store'>;
+
 export default function Store() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<StoreScreenNavigationProp>();
 
-  const [wishlist, setWishlist] = useState<number[]>([]); // Array of product IDs
-  const [products, setProducts] = useState<Product[]>(mockProducts.map(product => ({ ...product, isLiked: false }))); // Add isLiked property with initial value false
+  const [wishlist, setWishlist] = useState<number[]>([]);
+  const [products, setProducts] = useState<Product[]>(mockProducts.map(product => ({ ...product, isLiked: false })));
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [sortOption, setSortOption] = useState<string>('None');
+  const [categoryModalVisible, setCategoryModalVisible] = useState<boolean>(false);
+  const [sortModalVisible, setSortModalVisible] = useState<boolean>(false);
 
-  const handleLikePress = (productId: number) => {
+  // Dynamically generate unique categories from the products
+  const categories = ['All', ...Array.from(new Set(products.map(product => product.category)))];
+
+  useEffect(() => {
+    const loadWishlist = async () => {
+      try {
+        const storedWishlist = await AsyncStorage.getItem('wishlist');
+        if (storedWishlist) {
+          setWishlist(JSON.parse(storedWishlist));
+        }
+      } catch (error) {
+        console.error('Failed to load wishlist from storage', error);
+      }
+    };
+
+    loadWishlist();
+  }, []);
+
+  const handleLikePress = async (productId: number) => {
+    const newWishlist = wishlist.includes(productId)
+      ? wishlist.filter(id => id !== productId)
+      : [...wishlist, productId];
+
+    setWishlist(newWishlist);
+
+    try {
+      await AsyncStorage.setItem('wishlist', JSON.stringify(newWishlist));
+    } catch (error) {
+      console.error('Failed to save wishlist to storage', error);
+    }
+
     setProducts(prevProducts =>
       prevProducts.map(product => (product.id === productId ? { ...product, isLiked: !product.isLiked } : product))
     );
-
-    // Add/remove product from wishlist based on liked state
-    if (!wishlist.includes(productId) && products.find(p => p.id === productId)?.isLiked) {
-      setWishlist(prevWishlist => [...prevWishlist, productId]);
-    } else {
-      setWishlist(prevWishlist => prevWishlist.filter(id => id !== productId));
-    }
   };
+
+  const getDiscountedPrice = (product: Product) => {
+    const price = typeof product.price === 'number' ? product.price : 0;
+    const discount = typeof product.discount === 'number' ? product.discount : 0;
+    const discountedPrice = price * (1 - discount / 100);
+    return parseFloat(discountedPrice.toFixed(2)); // Return as a number
+  };
+  
+  const filteredProducts = products.filter(product => selectedCategory === 'All' || product.category === selectedCategory);
+  const sortedProducts = filteredProducts.sort((a, b) => {
+    const priceA = getDiscountedPrice(a);
+    const priceB = getDiscountedPrice(b);
+    if (sortOption === 'Price: Low to High') {
+      return priceA - priceB;
+    } else if (sortOption === 'Price: High to Low') {
+      return priceB - priceA;
+    }
+    return 0;
+  });
 
   const renderItem = ({ item }: { item: Product }) => {
     return (
-      <TouchableOpacity style={styles.productCard} onPress={() => navigation.navigate('Product', { item })}>
-        <Image source={{ uri: item.imag }} style={styles.productImage} />
-        <View style={styles.productInfo}>
-          <Text style={styles.productName}>{item.name}</Text>
-          <Text style={styles.productPrice}>{item.price}₪</Text>
-        </View>
-        <View style={styles.iconsContainer}>
-          <TouchableOpacity onPress={() => handleLikePress(item.id)}>
-            <Icon
-              name="heart"
-              size={24}
-              style={[styles.icon, item.isLiked ? { color: 'black' } : { color: 'white' }]}
-            />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => navigation.navigate('Cart')}>
-            <View style={styles.addToCartContainer}>
-              <Text style={styles.addToCartText}>Add to Cart</Text>
+      <View style={styles.productCard}>
+        <TouchableOpacity onPress={() => navigation.navigate('Product', { item })}>
+          <View style={styles.imageContainer}>
+            <Image source={item.imag} style={styles.productImage} />
+            {item.discount && (
+              <View style={styles.discountBadge}>
+                <Text style={styles.discountText}>{item.discount}% OFF</Text>
+              </View>
+            )}
+          </View>
+          <View style={styles.productInfo}>
+            <View style={styles.productInfoHeader}>
+              <Text style={styles.productName}>{item.name}</Text>
+              <TouchableOpacity onPress={() => handleLikePress(item.id)} style={styles.heartIcon}>
+                <Icon
+                  name="heart"
+                  size={24}
+                  style={[styles.icon, wishlist.includes(item.id) ? { color: 'red' } : { color: 'grey' }]}
+                />
+              </TouchableOpacity>
             </View>
-          </TouchableOpacity>
-        </View>
-      </TouchableOpacity>
+            <Text style={styles.productPrice}>{getDiscountedPrice(item)}₪</Text>
+          </View>
+        </TouchableOpacity>
+      </View>
     );
   };
+
+  const renderModal = (visible: boolean, setVisible: (visible: boolean) => void, options: string[], onSelect: (option: string) => void) => (
+    <Modal
+      transparent={true}
+      animationType="slide"
+      visible={visible}
+      onRequestClose={() => setVisible(false)}
+    >
+      <TouchableWithoutFeedback onPress={() => setVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            {options.map((option, index) => (
+              <TouchableOpacity
+                key={index}
+                style={styles.modalItem}
+                onPress={() => {
+                  onSelect(option);
+                  setVisible(false);
+                }}
+              >
+                <Text style={styles.modalItemText}>{option}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      </TouchableWithoutFeedback>
+    </Modal>
+  );
 
   return (
     <>
       <Navbar />
+      <View style={styles.filterContainer}>
+        <TouchableOpacity style={styles.filterButton} onPress={() => setCategoryModalVisible(true)}>
+          <Text style={styles.filterButtonText}>{selectedCategory}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.filterButton} onPress={() => setSortModalVisible(true)}>
+          <Text style={styles.filterButtonText}>{sortOption}</Text>
+        </TouchableOpacity>
+      </View>
+      {renderModal(categoryModalVisible, setCategoryModalVisible, categories, setSelectedCategory)}
+      {renderModal(sortModalVisible, setSortModalVisible, ['None', 'Price: Low to High', 'Price: High to Low'], setSortOption)}
       <FlatList
-        data={products} // Use the updated products state
+        data={sortedProducts}
         renderItem={renderItem}
         keyExtractor={item => item.id.toString()}
         numColumns={2}
+        contentContainerStyle={styles.flatListContent}
       />
     </>
   );
 }
+
 const styles = StyleSheet.create({
-  addToCartContainer: {
-    borderRadius: 5, // Rounded corners
-    backgroundColor: '#7C8139', // Button background color
-    justifyContent: 'center', // Center the text
-    shadowColor: 'black',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 3, // Increase shadow for a more elevated look
-    padding: 10, // Adjust padding for text fit
-    marginTop: 5,
-  },
-  addToCartText: {
-    fontSize: 16, // Slightly increase font size for better readability
-    fontWeight: 'bold',
-    color: '#fff',
-  },
   productCard: {
+    flex: 1,
     width: '45%',
     margin: 10,
     backgroundColor: '#fff',
@@ -148,7 +206,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 2,
     elevation: 2,
-    marginTop: 20,
+  },
+  imageContainer: {
+    position: 'relative',
   },
   productImage: {
     width: '100%',
@@ -157,36 +217,89 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 10,
     resizeMode: 'cover',
   },
+  discountBadge: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    backgroundColor: '#FF6347',
+    padding: 5,
+    borderRadius: 5,
+  },
+  discountText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
   productInfo: {
     padding: 10,
+  },
+  productInfoHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   productName: {
     fontSize: 16,
     fontWeight: 'bold',
+    flex: 1,
+    marginRight: 10,
   },
   productPrice: {
     fontSize: 14,
     color: '#7C8139',
     marginTop: 7,
   },
-  iconsContainer: {
+  icon: {
+    padding: 6, // Adjust padding for text fit
+  },
+  filterContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 5,
-    padding: 10,
+    paddingHorizontal: 10,
+    elevation: 2,
+    zIndex: 1, // Ensure it is above the FlatList
+    marginTop: 7,
   },
-  icon: {
-    color: 'white',
-    backgroundColor: '#BA555C', // Background color for the heart icon
-    justifyContent: 'center', // Center the text
-    shadowColor: 'black',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 3, // Increase shadow for a more elevated look
-    padding: 6, // Adjust padding for text fit
-    marginTop: 5,
+  filterButton: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 5,
+    marginHorizontal: 5,
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: 40,
   },
-
+  filterButtonText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  flatListContent: {
+    paddingTop: 5,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 5,
+    padding: 20,
+    width: '80%',
+    alignItems: 'center',
+  },
+  modalItem: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    width: '100%',
+  },
+  modalItemText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  heartIcon: {
+    padding: 6, 
+  }
 });
