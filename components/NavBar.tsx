@@ -5,7 +5,7 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 import { useCart } from '../contexts/CartContext';
 import { StackNavigationProp } from '@react-navigation/stack';
 
-// Define the types for your navigation stack
+// Define the types for navigation stack
 type RootStackParamList = {
   Home: undefined;
   Store: undefined;

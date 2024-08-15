@@ -14,27 +14,29 @@ interface Product {
   longDesc?: string;
   imag: ImageSourcePropType;
   minQty: number;
-  currQty: number;
+  currQty: number;  // מייצג את הכמות המקסימלית במלאי
   price: number;
   discount?: number;
   category: string;
   isLiked?: boolean;
+  isAddedToCart?: boolean;
+  isCartButtonGreen?: boolean;
 }
 
 const mockProducts: Product[] = [
-  { id: 1, name: "Ocean", shortDesc: "water colors", longDesc: "", imag: require('../assets/Images/Ocean.jpg'), minQty: 1, currQty: 1, price: 150, discount: 15, category: "water colors" },
-  { id: 2, name: "Pink storm", shortDesc: "oil colors", longDesc: "", imag: require('../assets/Images/pink.jpg'), minQty: 1, currQty: 1, price: 200,  category: "oil colors" },
-  { id: 3, name: "Rainbow", shortDesc: "oil colors", longDesc: "", imag: require('../assets/Images/rainbow.jpg'), minQty: 1, currQty: 1, price: 180, discount: 10, category: "oil colors" },
-  { id: 4, name: "Childhood", shortDesc: "water colors", longDesc: "", imag: require('../assets/Images/childhood.jpg'), minQty: 1, currQty: 1, price: 120, discount: 5, category: "water colors" },
-  { id: 8, name: "Sad Storm", shortDesc: "oil colors", longDesc: "", imag: require('../assets/Images/obb.jpg'), minQty: 1, currQty: 1, price: 170, discount: 12, category: "abstract" },
-  { id: 10, name: "Yellow Storm", shortDesc: "oil colors", longDesc: "", imag: require('../assets/Images/yellow.jpg'), minQty: 1, currQty: 1, price: 140, category: "abstract" },
-  { id: 11, name: "Pain", shortDesc: "emotional art", longDesc: "", imag: require('../assets/Images/pain.jpg'), minQty: 1, currQty: 1, price: 190, discount: 18, category: "abstract" },
-  { id: 12, name: "Mysterious Woman", shortDesc: "portrait", longDesc: "", imag: require('../assets/Images/women.jpg'), minQty: 1, currQty: 1, price: 210,  category: "portrait" },
-  { id: 13, name: "Waves", shortDesc: "water colors", longDesc: "", imag: require('../assets/Images/waves.jpg'), minQty: 1, currQty: 1, price: 160, discount: 14, category: "water colors" },
-  { id: 14, name: "Kitty Cat", shortDesc: "animal art", longDesc: "", imag: require('../assets/Images/cat.jpg'), minQty: 1, currQty: 1, price: 125, discount: 9, category: "animals" },
+  { id: 1, name: "Ocean", shortDesc: "water colors", longDesc: "", imag: require('../assets/Images/Ocean.jpg'), minQty: 1, currQty: 7, price: 150, discount: 15, category: "water colors" },
+  { id: 2, name: "Pink storm", shortDesc: "oil colors", longDesc: "", imag: require('../assets/Images/pink.jpg'), minQty: 1, currQty: 10, price: 200,  category: "oil colors" },
+  { id: 3, name: "Rainbow", shortDesc: "oil colors", longDesc: "", imag: require('../assets/Images/rainbow.jpg'), minQty: 1, currQty: 14, price: 180, discount: 10, category: "oil colors" },
+  { id: 4, name: "Childhood", shortDesc: "water colors", longDesc: "", imag: require('../assets/Images/childhood.jpg'), minQty: 1, currQty: 6, price: 120, discount: 5, category: "water colors" },
+  { id: 8, name: "Sad Storm", shortDesc: "oil colors", longDesc: "", imag: require('../assets/Images/obb.jpg'), minQty: 1, currQty: 4, price: 170, discount: 12, category: "abstract" },
+  { id: 10, name: "Yellow Storm", shortDesc: "oil colors", longDesc: "", imag: require('../assets/Images/yellow.jpg'), minQty: 1, currQty: 3, price: 140, category: "abstract" },
+  { id: 11, name: "Pain", shortDesc: "emotional art", longDesc: "", imag: require('../assets/Images/pain.jpg'), minQty: 1, currQty: 6, price: 190, discount: 18, category: "abstract" },
+  { id: 12, name: "Mysterious Woman", shortDesc: "portrait", longDesc: "", imag: require('../assets/Images/women.jpg'), minQty: 1, currQty: 8, price: 210,  category: "portrait" },
+  { id: 13, name: "Waves", shortDesc: "water colors", longDesc: "", imag: require('../assets/Images/waves.jpg'), minQty: 1, currQty: 5, price: 160, discount: 14, category: "water colors" },
+  { id: 14, name: "Kitty Cat", shortDesc: "animal art", longDesc: "", imag: require('../assets/Images/cat.jpg'), minQty: 1, currQty: 3, price: 125, discount: 9, category: "animals" },
   { id: 15, name: "Love of Fox Mom", shortDesc: "animal art", longDesc: "", imag: require('../assets/Images/fox.jpg'), minQty: 1, currQty: 1, price: 200,  category: "animals" },
-  { id: 16, name: "Blue Storm", shortDesc: "oil colors", longDesc: "", imag: require('../assets/Images/blue.jpg'), minQty: 1, currQty: 1, price: 180, discount: 15, category: "abstract" },
-  { id: 17, name: "Forest", shortDesc:"oil colors", longDesc: "", imag: require('../assets/Images/trees.jpg'), minQty: 1, currQty: 1, price: 150,  category: "abstract" },
+  { id: 16, name: "Blue Storm", shortDesc: "oil colors", longDesc: "", imag: require('../assets/Images/blue.jpg'), minQty: 1, currQty: 7, price: 180, discount: 15, category: "abstract" },
+  { id: 17, name: "Forest", shortDesc:"oil colors", longDesc: "", imag: require('../assets/Images/trees.jpg'), minQty: 1, currQty: 4, price: 150,  category: "abstract" },
   { id: 18, name: "Lonly fish", shortDesc: "water colors", longDesc: "", imag: require('../assets/Images/fish.jpg'), minQty: 1, currQty: 1, price: 120,  category: "water colors" },
 ];
 
@@ -51,7 +53,7 @@ export default function Store() {
   const navigation = useNavigation<StoreScreenNavigationProp>();
 
   const [wishlist, setWishlist] = useState<number[]>([]);
-  const [products, setProducts] = useState<Product[]>(mockProducts.map(product => ({ ...product, isLiked: false })));
+  const [products, setProducts] = useState<Product[]>(mockProducts.map(product => ({ ...product, isLiked: false, isAddedToCart: false, isCartButtonGreen: false })));
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [sortOption, setSortOption] = useState<string>('None');
   const [categoryModalVisible, setCategoryModalVisible] = useState<boolean>(false);
@@ -91,6 +93,54 @@ export default function Store() {
     setProducts(prevProducts =>
       prevProducts.map(product => (product.id === productId ? { ...product, isLiked: !product.isLiked } : product))
     );
+  };
+
+  const handleAddToCart = async (product: Product) => {
+    try {
+      const storedCart = await AsyncStorage.getItem('cart');
+      const cart = storedCart ? JSON.parse(storedCart) : [];
+
+      const existingProductIndex = cart.findIndex((item: Product) => item.id === product.id);
+
+      if (existingProductIndex !== -1) {
+        // אם המוצר כבר בעגלה, נוודא שלא נחרוג מהמלאי המקסימלי
+        if (cart[existingProductIndex].currQty < product.currQty) {
+          cart[existingProductIndex].currQty += 1;
+        } else {
+          alert('לא ניתן להוסיף יותר יחידות מהמלאי הזמין.');
+          return;
+        }
+      } else {
+        // אם המוצר לא בעגלה, נוסיף אותו עם כמות התחלתית של 1
+        if (product.currQty > 0) {
+          cart.push({ ...product, currQty: 1 });
+        } else {
+          alert('המוצר אינו זמין במלאי.');
+          return;
+        }
+      }
+
+      await AsyncStorage.setItem('cart', JSON.stringify(cart));
+      console.log('Product added to cart:', cart);
+
+      // Update the state to show "Added to Cart", change button color to green, and revert after 0.5 seconds
+      setProducts(prevProducts =>
+        prevProducts.map(p =>
+          p.id === product.id ? { ...p, isAddedToCart: true, isCartButtonGreen: true } : p
+        )
+      );
+
+      setTimeout(() => {
+        setProducts(prevProducts =>
+          prevProducts.map(p =>
+            p.id === product.id ? { ...p, isCartButtonGreen: false, isAddedToCart: false } : p
+          )
+        );
+      }, 500); // Change the background back after 0.5 seconds
+
+    } catch (error) {
+      console.error('Failed to add item to cart', error);
+    }
   };
 
   const getDiscountedPrice = (product: Product) => {
@@ -136,6 +186,19 @@ export default function Store() {
               </TouchableOpacity>
             </View>
             <Text style={styles.productPrice}>{getDiscountedPrice(item)}₪</Text>
+            <TouchableOpacity 
+              onPress={() => handleAddToCart(item)} 
+              style={[
+                styles.addToCartButton, 
+                item.isCartButtonGreen ? { backgroundColor: 'green' } : {}
+              ]}
+              disabled={item.isAddedToCart}
+            >
+              <Text style={styles.addToCartText}>
+                {item.isAddedToCart ? 'Added to Cart' : 'Add to Cart'}
+              </Text>
+              <Icon name="shopping-cart" size={20} color="#fff" />
+            </TouchableOpacity>
           </View>
         </TouchableOpacity>
       </View>
@@ -249,7 +312,7 @@ const styles = StyleSheet.create({
     marginTop: 7,
   },
   icon: {
-    padding: 6, // Adjust padding for text fit
+    padding: 6,
   },
   filterContainer: {
     flexDirection: 'row',
@@ -257,7 +320,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 10,
     elevation: 2,
-    zIndex: 1, // Ensure it is above the FlatList
+    zIndex: 1,
     marginTop: 7,
   },
   filterButton: {
@@ -300,6 +363,21 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   heartIcon: {
-    padding: 6, 
-  }
+    padding: 6,
+  },
+  addToCartButton: {
+    marginTop: 10,
+    backgroundColor: '#333',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addToCartText: {
+    color: '#fff',
+    fontSize: 14,
+    marginRight: 5,
+  },
 });

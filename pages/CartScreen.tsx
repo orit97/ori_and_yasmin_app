@@ -1,16 +1,14 @@
 import { StyleSheet, Text, View, FlatList, TouchableOpacity, Image } from 'react-native';
 import React, { useState, useEffect } from 'react';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage'; // Import AsyncStorage
+import { useFocusEffect } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Interface for Product data type
 interface Product {
-  [x: string]: any;
   id: number;
   name: string;
   shortDesc: string;
   longDesc?: string;
-  imag: any; // Use 'any' to handle require
+  imag: any;
   minQty: number;
   currQty: number;
   price: number;
@@ -18,25 +16,7 @@ interface Product {
   category: string;
 }
 
-const mockProducts: Product[] = [
-  { id: 1, name: "Ocean", shortDesc: "water colors", longDesc: "", imag: require('../assets/Images/Ocean.jpg'), minQty: 1, currQty: 1, price: 150, discount: 15, category: "water colors" },
-  { id: 2, name: "Pink storm", shortDesc: "oil colors", longDesc: "", imag: require('../assets/Images/pink.jpg'), minQty: 1, currQty: 1, price: 200, category: "oil colors" },
-  { id: 3, name: "Rainbow", shortDesc: "oil colors", longDesc: "", imag: require('../assets/Images/rainbow.jpg'), minQty: 1, currQty: 1, price: 180, discount: 10, category: "oil colors" },
-  { id: 4, name: "Childhood", shortDesc: "water colors", longDesc: "", imag: require('../assets/Images/childhood.jpg'), minQty: 1, currQty: 1, price: 120, discount: 5, category: "water colors" },
-  { id: 8, name: "Sad Storm", shortDesc: "oil colors", longDesc: "", imag: require('../assets/Images/obb.jpg'), minQty: 1, currQty: 1, price: 170, discount: 12, category: "abstract" },
-  { id: 10, name: "Yellow Storm", shortDesc: "oil colors", longDesc: "", imag: require('../assets/Images/yellow.jpg'), minQty: 1, currQty: 1, price: 140, category: "abstract" },
-  { id: 11, name: "Pain", shortDesc: "emotional art", longDesc: "", imag: require('../assets/Images/pain.jpg'), minQty: 1, currQty: 1, price: 190, discount: 18, category: "abstract" },
-  { id: 12, name: "Mysterious Woman", shortDesc: "portrait", longDesc: "", imag: require('../assets/Images/women.jpg'), minQty: 1, currQty: 1, price: 210, category: "portrait" },
-  { id: 13, name: "Waves", shortDesc: "water colors", longDesc: "", imag: require('../assets/Images/waves.jpg'), minQty: 1, currQty: 1, price: 160, discount: 14, category: "water colors" },
-  { id: 14, name: "Kitty Cat", shortDesc: "animal art", longDesc: "", imag: require('../assets/Images/cat.jpg'), minQty: 1, currQty: 1, price: 125, discount: 9, category: "animals" },
-  { id: 15, name: "Love of Fox Mom", shortDesc: "animal art", longDesc: "", imag: require('../assets/Images/fox.jpg'), minQty: 1, currQty: 1, price: 200, category: "animals" },
-  { id: 16, name: "Blue Storm", shortDesc: "oil colors", longDesc: "", imag: require('../assets/Images/blue.jpg'), minQty: 1, currQty: 1, price: 180, discount: 15, category: "abstract" },
-  { id: 17, name: "Forest", shortDesc: "oil colors", longDesc: "", imag: require('../assets/Images/trees.jpg'), minQty: 1, currQty: 1, price: 150, category: "abstract" },
-  { id: 18, name: "Lonly Fish", shortDesc: "water colors", longDesc: "", imag: require('../assets/Images/fish.jpg'), minQty: 1, currQty: 1, price: 120, category: "water colors" },
-];
-
 const CartScreen = () => {
-  const navigation = useNavigation();
   const [cartItems, setCartItems] = useState<Product[]>([]);
   const [totalPrice, setTotalPrice] = useState<number>(0);
 
@@ -46,12 +26,11 @@ const CartScreen = () => {
         try {
           const storedCart = await AsyncStorage.getItem('cart');
           if (storedCart) {
-            const cartIds = JSON.parse(storedCart);
-            const filteredProducts = mockProducts.filter(product => cartIds.includes(product.id));
-            setCartItems(filteredProducts);
+            const cart = JSON.parse(storedCart);
+            setCartItems(cart);
 
             // Calculate total price
-            const total = filteredProducts.reduce((sum, product) => {
+            const total = cart.reduce((sum: number, product: Product) => {
               const price = product.discount ? product.price * (1 - product.discount / 100) : product.price;
               return sum + price * product.currQty;
             }, 0);
@@ -68,47 +47,35 @@ const CartScreen = () => {
 
   const handleRemoveFromCart = async (productId: number) => {
     try {
-      const storedCart = await AsyncStorage.getItem('cart');
-      const cart: number[] = storedCart ? JSON.parse(storedCart) : [];
-      const newCart = cart.filter((id: number) => id !== productId); // Explicitly type 'id'
+      const newCart = cartItems.filter(item => item.id !== productId);
       await AsyncStorage.setItem('cart', JSON.stringify(newCart));
-      setCartItems(prevItems => prevItems.filter(item => item.id !== productId));
-      const total = newCart.reduce((sum: number, id: number) => { // Explicitly type 'sum' and 'id'
-        const product = mockProducts.find(p => p.id === id);
-        if (product) {
-          const price = product.discount ? product.price * (1 - product.discount / 100) : product.price;
-          return sum + price * product.currQty;
-        }
-        return sum;
-      }, 0);
-      setTotalPrice(total);
+      setCartItems(newCart);
+      updateTotalPrice(newCart);
     } catch (error) {
       console.error('Failed to remove item from cart', error);
     }
   };
 
-  const handleIncreaseQty = (productId: number) => {
-    setCartItems(prevItems =>
-      prevItems.map(item =>
-        item.id === productId ? { ...item, currQty: item.currQty + 1 } : item
-      )
+  const handleIncreaseQty = async (productId: number) => {
+    const updatedCart = cartItems.map(item =>
+      item.id === productId ? { ...item, currQty: item.currQty + 1 } : item
     );
-    updateTotalPrice();
+    setCartItems(updatedCart);
+    await AsyncStorage.setItem('cart', JSON.stringify(updatedCart));
+    updateTotalPrice(updatedCart);
   };
 
-  const handleDecreaseQty = (productId: number) => {
-    setCartItems(prevItems =>
-      prevItems.map(item =>
-        item.id === productId && item.currQty > 1
-          ? { ...item, currQty: item.currQty - 1 }
-          : item
-      )
+  const handleDecreaseQty = async (productId: number) => {
+    const updatedCart = cartItems.map(item =>
+      item.id === productId && item.currQty > 1 ? { ...item, currQty: item.currQty - 1 } : item
     );
-    updateTotalPrice();
+    setCartItems(updatedCart);
+    await AsyncStorage.setItem('cart', JSON.stringify(updatedCart));
+    updateTotalPrice(updatedCart);
   };
 
-  const updateTotalPrice = () => {
-    const total = cartItems.reduce((sum, product) => {
+  const updateTotalPrice = (cart: Product[]) => {
+    const total = cart.reduce((sum, product) => {
       const price = product.discount ? product.price * (1 - product.discount / 100) : product.price;
       return sum + price * product.currQty;
     }, 0);
@@ -152,7 +119,7 @@ const CartScreen = () => {
       <FlatList
         data={cartItems}
         renderItem={renderItem}
-        keyExtractor={item => item.id.toString()}
+        keyExtractor={(item) => (item.id ? item.id.toString() : Math.random().toString())}
         contentContainerStyle={styles.flatListContent}
       />
       <View style={styles.totalContainer}>
@@ -236,8 +203,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
     textAlign: 'center',
-    letterSpacing: 1,
-
   },
   qtyText: {
     fontSize: 16,
@@ -250,15 +215,13 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     paddingHorizontal: 10,
     borderRadius: 5,
-    marginTop: 10,    
-    
+    marginTop: 10,
   },
   removeButtonText: {
     color: '#fff',
     fontSize: 14,
     fontWeight: 'bold',
     textAlign: 'center',
-    letterSpacing: 1,
   },
   flatListContent: {
     paddingBottom: 20,
@@ -274,9 +237,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
     textAlign: 'center',
-    marginBottom: 15,
-    marginTop: 10,
-
   },
 });
 
