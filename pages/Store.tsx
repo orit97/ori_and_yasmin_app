@@ -37,7 +37,7 @@ const mockProducts: Product[] = [
   { id: 15, name: "Love of Fox Mom", shortDesc: "animal art", longDesc: "", imag: require('../assets/Images/fox.jpg'), minQty: 1, currQty: 1, price: 200,  category: "animals" },
   { id: 16, name: "Blue Storm", shortDesc: "oil colors", longDesc: "", imag: require('../assets/Images/blue.jpg'), minQty: 1, currQty: 7, price: 180, discount: 15, category: "abstract" },
   { id: 17, name: "Forest", shortDesc:"oil colors", longDesc: "", imag: require('../assets/Images/trees.jpg'), minQty: 1, currQty: 4, price: 150,  category: "abstract" },
-  { id: 18, name: "Lonly fish", shortDesc: "water colors", longDesc: "", imag: require('../assets/Images/fish.jpg'), minQty: 1, currQty: 1, price: 120,  category: "water colors" },
+  { id: 18, name: "Lonly fish", shortDesc: "water colors", longDesc: "", imag: require('../assets/Images/fish.jpg'), minQty: 1, currQty: 8, price: 120,  category: "water colors" },
 ];
 
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -99,15 +99,15 @@ export default function Store() {
     try {
       const storedCart = await AsyncStorage.getItem('cart');
       const cart = storedCart ? JSON.parse(storedCart) : [];
-
+  
       const existingProductIndex = cart.findIndex((item: Product) => item.id === product.id);
-
+  
       if (existingProductIndex !== -1) {
         // אם המוצר כבר בעגלה, נוודא שלא נחרוג מהמלאי המקסימלי
         if (cart[existingProductIndex].currQty < product.currQty) {
           cart[existingProductIndex].currQty += 1;
         } else {
-          alert('לא ניתן להוסיף יותר יחידות מהמלאי הזמין.');
+          alert('Cannot add more items than available in stock.');
           return;
         }
       } else {
@@ -119,17 +119,17 @@ export default function Store() {
           return;
         }
       }
-
+  
       await AsyncStorage.setItem('cart', JSON.stringify(cart));
       console.log('Product added to cart:', cart);
-
+  
       // Update the state to show "Added to Cart", change button color to green, and revert after 0.5 seconds
       setProducts(prevProducts =>
         prevProducts.map(p =>
           p.id === product.id ? { ...p, isAddedToCart: true, isCartButtonGreen: true } : p
         )
       );
-
+  
       setTimeout(() => {
         setProducts(prevProducts =>
           prevProducts.map(p =>
@@ -137,11 +137,12 @@ export default function Store() {
           )
         );
       }, 500); // Change the background back after 0.5 seconds
-
+  
     } catch (error) {
       console.error('Failed to add item to cart', error);
     }
   };
+  
 
   const getDiscountedPrice = (product: Product) => {
     const price = typeof product.price === 'number' ? product.price : 0;

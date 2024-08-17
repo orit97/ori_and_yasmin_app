@@ -1,4 +1,3 @@
-// Import necessary libraries and types
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -26,7 +25,7 @@ interface CartProviderProps {
 const CartContext = createContext<CartContextProps | undefined>(undefined);
 
 // Define the CartProvider component
-export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
+const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartCount, setCartCount] = useState<number>(0);
 
@@ -120,3 +119,5 @@ export const useCart = () => {
   }
   return context;
 };
+
+export default CartProvider;

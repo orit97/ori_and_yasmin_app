@@ -2,6 +2,7 @@ import { StyleSheet, Text, View, FlatList, TouchableOpacity, Image } from 'react
 import React, { useState, useEffect } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useProducts } from '../contexts/ProductContext';
 
 interface Product {
   id: number;
@@ -16,9 +17,10 @@ interface Product {
   category: string;
 }
 
-const CartScreen = () => {
+const CartScreen: React.FC = () => {
   const [cartItems, setCartItems] = useState<Product[]>([]);
   const [totalPrice, setTotalPrice] = useState<number>(0);
+  const { products } = useProducts();
 
   useFocusEffect(
     React.useCallback(() => {
@@ -42,8 +44,12 @@ const CartScreen = () => {
       };
 
       loadCartItems();
-    }, [])
+    }, [products])
   );
+
+  const findProductById = (productId: number): Product | undefined => {
+    return products.find(product => product.id === productId);
+  };
 
   const handleRemoveFromCart = async (productId: number) => {
     try {
@@ -57,9 +63,19 @@ const CartScreen = () => {
   };
 
   const handleIncreaseQty = async (productId: number) => {
-    const updatedCart = cartItems.map(item =>
-      item.id === productId ? { ...item, currQty: item.currQty + 1 } : item
-    );
+    const updatedCart = cartItems.map(item => {
+      if (item.id === productId) {
+        const availableStock = findProductById(productId)?.currQty;
+
+        if (availableStock && item.currQty < availableStock) {
+          return { ...item, currQty: item.currQty + 1 };
+        } else {
+          alert('Cannot add more items than available in stock.');
+        }
+      }
+      return item;
+    });
+
     setCartItems(updatedCart);
     await AsyncStorage.setItem('cart', JSON.stringify(updatedCart));
     updateTotalPrice(updatedCart);
@@ -116,15 +132,26 @@ const CartScreen = () => {
   return (
     <View style={styles.container}>
       <Text style={styles.header}>Cart</Text>
-      <FlatList
-        data={cartItems}
-        renderItem={renderItem}
-        keyExtractor={(item) => (item.id ? item.id.toString() : Math.random().toString())}
-        contentContainerStyle={styles.flatListContent}
-      />
-      <View style={styles.totalContainer}>
-        <Text style={styles.totalText}>Total: {totalPrice.toFixed(2)}₪</Text>
-      </View>
+      {cartItems.length === 0 ? (
+        <View style={styles.emptyCartContainer}>
+          <Text style={styles.emptyCartText}>Your cart is empty. Add items to get started!</Text>
+        </View>
+      ) : (
+        <>
+          <FlatList
+            data={cartItems}
+            renderItem={renderItem}
+            keyExtractor={(item) => (item.id ? item.id.toString() : Math.random().toString())}
+            contentContainerStyle={styles.flatListContent}
+          />
+          <View style={styles.totalContainer}>
+            <Text style={styles.totalText}>Total: {totalPrice.toFixed(2)}₪</Text>
+            <TouchableOpacity style={styles.checkoutButton}>
+              <Text style={styles.checkoutButtonText}>Proceed to Checkout</Text>
+            </TouchableOpacity>
+          </View>
+        </>
+      )}
     </View>
   );
 };
@@ -154,25 +181,26 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 2,
     elevation: 2,
-    padding: 10,
+    padding: 15,
   },
   productImage: {
-    width: 80,
-    height: 80,
+    width: 100,
+    height: 100,
     borderRadius: 10,
     resizeMode: 'cover',
   },
   productInfo: {
-    marginLeft: 10,
+    marginLeft: 20,
     justifyContent: 'center',
     flex: 1,
   },
   productName: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
+    marginBottom: 10,
   },
   productPrice: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#7C8139',
   },
   originalPrice: {
@@ -199,29 +227,29 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   qtyButtonText: {
-    fontSize: 15,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
     textAlign: 'center',
   },
   qtyText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
     marginRight: 9,
   },
   removeButton: {
-    backgroundColor: '#FF6347',
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    borderRadius: 5,
+    alignSelf: 'flex-start',
     marginTop: 10,
+    paddingVertical: 5,
+    paddingHorizontal: 15,
+    borderRadius: 5,
+    backgroundColor: '#FF6347',
   },
   removeButtonText: {
-    color: '#fff',
     fontSize: 14,
-    fontWeight: 'bold',
-    textAlign: 'center',
+    fontWeight: '600',
+    color: '#fff',
   },
   flatListContent: {
     paddingBottom: 20,
@@ -229,13 +257,35 @@ const styles = StyleSheet.create({
   totalContainer: {
     borderTopWidth: 1,
     borderColor: '#ccc',
-    padding: 10,
+    padding: 20,
     backgroundColor: '#fff',
+    alignItems: 'center',
   },
   totalText: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#333',
+    marginBottom: 20,
+  },
+  checkoutButton: {
+    backgroundColor: '#7C8139',
+    paddingVertical: 15,
+    paddingHorizontal: 40,
+    borderRadius: 5,
+  },
+  checkoutButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  emptyCartContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyCartText: {
+    fontSize: 18,
+    color: '#666',
     textAlign: 'center',
   },
 });
