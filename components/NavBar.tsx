@@ -47,34 +47,34 @@ export default function Navbar() {
         Alert.alert('Not Found', 'No matching page found for your search query.');
         break;
     }
+    setSearchQuery(''); // מנקה את שדה החיפוש לאחר ביצוע החיפוש
   };
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity onPress={() => navigation.navigate('Home')}>
+      <TouchableOpacity onPress={() => navigation.navigate('Home')} style={styles.logoContainer}>
         <Image source={require('../assets/Images/logo.jpg')} style={styles.logo} />
       </TouchableOpacity>
 
       <View style={styles.searchBarContainer}>
+        <Icon name="search" size={18} color="#B5B5B5" style={styles.searchIcon} />
         <TextInput
           placeholder="Search"
+          placeholderTextColor="#B5B5B5"
           style={styles.searchBarInput}
           value={searchQuery}
           onChangeText={setSearchQuery}
-          onSubmitEditing={handleSearch} // Trigger search on enter key
+          onSubmitEditing={handleSearch}
         />
-        <TouchableOpacity onPress={handleSearch} style={styles.searchButton}>
-          <Icon name="search" size={20} color="#000" />
-        </TouchableOpacity>
       </View>
 
       <View style={styles.iconsContainer}>
         <TouchableOpacity onPress={() => navigation.navigate('Favorites')}>
-          <Icon name="heart" size={24} style={styles.icon} />
+          <Icon name="heart" size={24} style={styles.icon} color="#6B4F36" />
         </TouchableOpacity>
         <View style={styles.cartIconContainer}>
           <TouchableOpacity onPress={() => navigation.navigate('Cart')}>
-            <Icon name="shopping-bag" size={24} style={styles.icon} />
+            <Icon name="shopping-cart" size={24} style={styles.icon} color="#6B4F36" />
           </TouchableOpacity>
           {cartCount > 0 && (
             <View style={styles.cartBadge}>
@@ -83,7 +83,7 @@ export default function Navbar() {
           )}
         </View>
         <TouchableOpacity onPress={() => navigation.navigate('HamburgerMenu')}>
-          <Icon name="bars" size={24} style={styles.icon} />
+          <Icon name="bars" size={24} style={styles.icon} color="#6B4F36" />
         </TouchableOpacity>
       </View>
     </View>
@@ -95,42 +95,45 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 15,
-    backgroundColor: '#BDAE9A',
-    height: 130,
+    backgroundColor: '#D1BAA2', // צבע רקע חדש ל-NAVBAR, מעט שונה אך קרוב לקודם
     justifyContent: 'space-between',
-    paddingVertical: 10,
-    paddingTop: 60,
-    paddingBottom: 20,
+    paddingHorizontal: 20,
+    paddingTop: 50,
+    paddingBottom: 10,
+  },
+  logoContainer: {
+    marginRight: 20,
   },
   logo: {
-    width: 55,
-    height: 55,
-    borderRadius: 100,
-    marginRight: 15,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
   },
   searchBarContainer: {
     flex: 1,
-    padding: 10,
-    backgroundColor: '#fff',
-    borderRadius: 15,
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#E6D3C2', // צבע רקע חדש לשורת החיפוש, מעט בהיר יותר
+    borderRadius: 30, // קצוות עגולים יותר
+    paddingHorizontal: 15,
+    paddingVertical: 8, // גובה חיפוש מעט יותר גבוה
+    marginRight: 20, // מרווח בין החיפוש לאייקונים
+  },
+  searchIcon: {
+    marginRight: 10,
   },
   searchBarInput: {
     flex: 1,
     fontSize: 16,
-    paddingHorizontal: 15,
-  },
-  searchButton: {
-    paddingHorizontal: 10,
+    color: '#5C5C5C', // צבע טקסט רך
   },
   iconsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   icon: {
-    marginLeft: 15,
+    marginLeft: 20,
+    color: '#6B4F36', // צבע אייקונים שתואם לכפתור המשני
   },
   cartIconContainer: {
     position: 'relative',
@@ -139,7 +142,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: -10,
     top: -10,
-    backgroundColor: 'red',
+    backgroundColor: '#8C5A42', // צבע תגים חדש, כהה יותר אך עדיין מתאים לפלטת הצבעים
     borderRadius: 10,
     width: 20,
     height: 20,
@@ -152,3 +155,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 });
+
+
+

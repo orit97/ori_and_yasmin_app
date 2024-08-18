@@ -1,8 +1,7 @@
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useNavigation } from '@react-navigation/native';
-import { StyleSheet, Text, View, Image, TouchableOpacity } from 'react-native';
-import React from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { StyleSheet, Text, View, ImageBackground, Animated, TouchableOpacity, Easing, StatusBar } from 'react-native';
+import React, { useEffect, useRef } from 'react';
 import Navbar from '../components/NavBar';
 import { createStackNavigator } from '@react-navigation/stack';
 
@@ -12,118 +11,147 @@ const Stack = createStackNavigator();
 type RootStackParamList = {
   Home: undefined;
   Store: undefined;
+  About: undefined;
 };
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
 
 export default function Home() {
   const navigation = useNavigation<HomeScreenNavigationProp>();
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const translateAnim = useRef(new Animated.Value(30)).current;
+
+  useEffect(() => {
+    // Fade-in animation
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 1500,
+      easing: Easing.out(Easing.ease),
+      useNativeDriver: true,
+    }).start();
+
+    // Slide-up animation
+    Animated.timing(translateAnim, {
+      toValue: 0,
+      duration: 1500,
+      easing: Easing.out(Easing.ease),
+      useNativeDriver: true,
+    }).start();
+  }, [fadeAnim, translateAnim]);
 
   return (
     <>
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
       <Navbar />
-      <SafeAreaView style={styles.container}>
-        <View style={styles.background}>
-          <Image source={require('../assets/Images/background.jpg')} style={styles.backgroundImage} />
-          <View style={styles.gradientOverlay} />
-        </View>
-        <View style={styles.content}>
-          <Text style={styles.title}>Adam's Art</Text>
-          <Text style={styles.tagline}>Discover unique and inspiring artwork</Text>
+      <View style={styles.container}>
+        <ImageBackground source={require('../assets/Images/background.jpg')} style={styles.background}>
+          <View style={styles.overlay}>
+            <Animated.View style={[styles.content, { opacity: fadeAnim, transform: [{ translateY: translateAnim }] }]}>
+              <Text style={styles.title}>Adam's Art Gallery</Text>
+              <Text style={styles.subtitle}>A Journey Through Artistic Expression</Text>
 
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity
-              onPress={() => navigation.navigate('Store')}
-              style={styles.button}
-            >
-              <Text style={styles.buttonText}>To the Store</Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('Store')}
+                style={styles.primaryButton}
+              >
+                <Text style={styles.primaryButtonText}>Explore Our Collection</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => navigation.navigate('About')}
+                style={styles.secondaryButton}
+              >
+                <Text style={styles.secondaryButtonText}>About the Artist</Text>
+              </TouchableOpacity>
+            </Animated.View>
           </View>
-        </View>
-      </SafeAreaView>
+        </ImageBackground>
+      </View>
     </>
   );
 }
-
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
   background: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  backgroundImage: {
+    flex: 1,
     width: '100%',
     height: '100%',
-    resizeMode: 'cover',
+    resizeMode: 'cover', // Make sure the image covers the entire screen
   },
-  content: {
+  overlay: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    paddingHorizontal: 20,
+    backgroundColor: 'rgba(232, 234, 220, 0.5)', // הכהייה קלה של הרקע כדי להבטיח שהטקסט הלבן ייראה בצורה ברורה
+  },
+  content: {
+    alignItems: 'center',
   },
   title: {
-    fontSize: 32,
+    fontSize: 40,
     fontWeight: 'bold',
-    color: '#fff',
+    color: '#1F1F1F', // צבע כהה הרבה יותר, קרוב לשחור
     textAlign: 'center',
     marginBottom: 10,
+    letterSpacing: 2,
     textTransform: 'uppercase',
-    letterSpacing: 2,
-    textShadowColor: 'black',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
   },
-  tagline: {
+  subtitle: {
     fontSize: 18,
-    color: '#fff',
+    color: '#FFFFFF', // צבע לבן כדי להבליט את תת-הכותרת
     textAlign: 'center',
-    marginBottom: 10,
-    letterSpacing: 2,
-    textShadowColor: 'black',
+    marginBottom: 40,
+    letterSpacing: 1,
+    fontStyle: 'italic',
+    textShadowColor: 'rgba(0, 0, 0, 999)', // הוספת צל לטקסט
     textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+    textShadowRadius: 4,
   },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-    marginTop: 20,
-  },
-  button: {
-    backgroundColor: '#77794A',
-    padding: 12,
-    borderRadius: 20,
+  primaryButton: {
+    backgroundColor: '#8B7355', // צבע כהה יותר לכפתור
+    paddingVertical: 15,
+    paddingHorizontal: 50,
+    borderRadius: 25,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: 'black',
-    shadowOffset: { width: 0, height: 2 },
+    marginBottom: 20,
+    shadowColor: 'rgba(0, 0, 0, 0.2)',
+    shadowOffset: { width: 0, height: 5 },
     shadowOpacity: 0.5,
-    shadowRadius: 2,
+    shadowRadius: 8,
+    elevation: 10,
   },
-  buttonText: {
+  primaryButtonText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: 'bold',
-    textAlign: 'center',
+    fontWeight: '700', // עבה יותר לכפתור
     textTransform: 'uppercase',
-    letterSpacing: 2,
-    textShadowColor: 'black',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+    letterSpacing: 1,
   },
-  gradientOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)', // Adjust opacity for desired darkness
+  secondaryButton: {
+    backgroundColor: '#6B4F36', // צבע אחיד כהה ושונה מהכפתור הראשי
+    paddingVertical: 15,
+    paddingHorizontal: 50,
+    borderRadius: 25,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: 'rgba(0, 0, 0, 0.3)', // צל יותר חזק
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.6,
+    shadowRadius: 8,
+    elevation: 10,
+  },
+  secondaryButtonText: {
+    color: '#FFFFFF', // צבע לבן לטקסט בכפתור המשני כדי להבטיח נראות
+    fontSize: 16,
+    fontWeight: '700', // עבה יותר לטקסט בכפתור המשני
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
 });
+
+
