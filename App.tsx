@@ -8,7 +8,6 @@ import React from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import CartProvider from './contexts/CartContext';
 
-
 // Import pages and components
 import Home from './pages/Home';
 import About from './pages/About';
@@ -20,6 +19,7 @@ import HamburgerMenu from './components/HamburgerMenu';
 import ProductScreen from './pages/ProductScreen';
 import FavoritesScreen from './pages/FavoritesScreen';
 import CartScreen from './pages/CartScreen';
+import ProfileScreen from './pages/ProfileScreen'; // Import the profile screen
 import { ProductProvider } from './contexts/ProductContext'; 
 
 const Stack = createStackNavigator();
@@ -42,6 +42,7 @@ export default function App() {
               <Stack.Screen name="Product" component={ProductScreen} />
               <Stack.Screen name="Favorites" component={FavoritesScreen} />
               <Stack.Screen name="Cart" component={CartScreen} />
+              <Stack.Screen name="Profile" component={ProfileScreen} /> {/* Add ProfileScreen */}
             </Stack.Navigator>
           </NavigationContainer>
         </SafeAreaView>
