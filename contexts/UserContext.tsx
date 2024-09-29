@@ -1,39 +1,28 @@
+// src/contexts/UserContext.tsx
 import React, { createContext, useState, useContext, ReactNode } from 'react';
+import { User } from '../types/User'; // Import the User type
 
-// הגדרת מבנה נתוני המשתמש
-interface User {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  birthDate: Date;
-  address: {
-    street: string;
-    city: string;
-    homeNumber: number;
-  };
-  image?: string | null;
-}
-
-// יצירת ההקשר (Context) לשמירת פרטי המשתמש
+// Define the UserContext structure
 interface UserContextType {
   user: User | null;
   login: (user: User) => void;
   logout: () => void;
 }
 
+// Create the context
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
-// יצירת ספק (Provider) של ההקשר
 export const UserProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
 
   const login = (newUser: User) => {
-    setUser(newUser); // שמירת המשתמש בהקשר
+    console.log('Setting user data:', newUser);
+    setUser(newUser);
+    console.log('user.data',newUser)
   };
 
   const logout = () => {
-    setUser(null); // יציאה מהמשתמש
+    setUser(null);
   };
 
   return (
@@ -43,7 +32,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
-// יצירת hook לשימוש בהקשר
+// Hook to use the UserContext
 export const useUser = () => {
   const context = useContext(UserContext);
   if (!context) {

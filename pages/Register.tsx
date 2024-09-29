@@ -1,222 +1,216 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  Button,
-  Alert,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Platform,
-} from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker'; // ייבוא DateTimePicker
-import { useNavigation } from '@react-navigation/native';
-import { useUser } from '../contexts/UserContext'; // שימוש ב-UserContext
-import { Address } from '../types/Address';
-import { StackNavigationProp } from '@react-navigation/stack';
-
-interface RegistrationState {
-  email: string;
-  firstName: string;
-  lastName: string;
-  phone: string;
-  birthDate: Date | null;
-  password: string;
-  confirmPassword: string;
-  address: Address;
-}
+import { View, Text, TextInput, Button, StyleSheet, ScrollView, TouchableOpacity, Platform, Alert } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { useUser } from '../contexts/UserContext';
+import { postData } from '../api';
+import { Formik, ErrorMessage } from 'formik';
+import * as Yup from 'yup';
 
 const RegistrationForm: React.FC = () => {
-  const [state, setState] = useState<RegistrationState>({
-    email: '',
-    firstName: '',
-    lastName: '',
-    phone: '',
-    password: '',
-    confirmPassword: '',
-    birthDate: null,
-    address: {
-      street: '',
-      city: '',
-      homeNumber: 0,
-    },
+  const { login } = useUser();
+  const [loading, setLoading] = useState(false); // Add loading state
+  const [showDatePicker, setShowDatePicker] = useState(false); // Control date picker visibility
+
+  // Validation schema using Yup
+  const validationSchema = Yup.object().shape({
+    firstName: Yup.string().required('First Name is required'),
+    lastName: Yup.string().required('Last Name is required'),
+    email: Yup.string().email('Invalid email format').required('Email is required'),
+    password: Yup.string()
+      .min(6, 'Password must be at least 6 characters')
+      .matches(/^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$/, 'Password must include an uppercase letter, number, and special character')
+      .required('Password is required'),
+    confirmPassword: Yup.string()
+      .oneOf([Yup.ref('password')], 'Passwords must match')
+      .required('Confirm Password is required'),
+    phone: Yup.string()
+      .matches(/^[0-9]{10}$/, 'Phone number must be exactly 10 digits')
+      .required('Phone number is required'),
+    birthDate: Yup.date()
+      .required('Birth Date is required')
+      .test('age', 'You must be at least 15 years old', function (value) {
+        const age = calculateAge(new Date(value));
+        return age >= 15;
+      }),
+    address: Yup.object().shape({
+      street: Yup.string().required('Street is required'),
+      city: Yup.string().required('City is required'),
+      homeNumber: Yup.number().required('Home number is required').positive().integer(),
+    }),
   });
 
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const { login } = useUser(); // קבלת פונקציית login מההקשר
-  const navigation = useNavigation(); // שימוש ב-React Navigation לניווט
-
-  const handleInputChange = (name: keyof RegistrationState, value: string) => {
-    setState((prevState) => ({ ...prevState, [name]: value }));
-  };
-
-  const handleDateChange = (event: any, selectedDate?: Date) => {
-    setShowDatePicker(Platform.OS === 'ios');
-    if (selectedDate) {
-      setState((prevState) => ({ ...prevState, birthDate: selectedDate }));
-    }
-  };
-
-  const calculateAge = (birthDate: Date): number => {
+  const calculateAge = (birthDate: Date) => {
     const today = new Date();
-    const age = today.getFullYear() - birthDate.getFullYear();
+    let age = today.getFullYear() - birthDate.getFullYear();
     const monthDiff = today.getMonth() - birthDate.getMonth();
     if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-      return age - 1;
+      age -= 1;
     }
     return age;
   };
 
-  const validateEmail = (email: string): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
+  const handleRegister = async (values: any, { resetForm }: any) => {
+    setLoading(true);
+    try {
+      login({
+        firstName: values.firstName,
+        lastName: values.lastName,
+        email: values.email,
+        phone: values.phone,
+        birthDate: values.birthDate,
+        address: values.address,
+        role: ''
+      });
 
-  const validatePassword = (password: string): boolean => {
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*]).{8,}$/;
-    return passwordRegex.test(password);
-  };
-
-  const validatePhone = (phone: string): boolean => {
-    const phoneRegex = /^[0-9]{10}$/;
-    return phoneRegex.test(phone);
-  };
-
-  const handleSubmit = async () => {
-    if (!state.birthDate) {
-      Alert.alert('Registration Error', 'Please select a birth date.');
-      return;
+      const response = await postData('/register', values);
+      Alert.alert('Success', `User registered`);
+      resetForm();
+    } catch (error) {
+      Alert.alert('Error', 'Registration failed');
+    } finally {
+      setLoading(false);
     }
-
-    const userAge = calculateAge(state.birthDate);
-
-    if (userAge < 15) {
-      Alert.alert('Registration Error', 'You must be at least 15 years old to register.');
-      return;
-    }
-
-    if (!validateEmail(state.email)) {
-      Alert.alert('Registration Error', 'Please enter a valid email address.');
-      return;
-    }
-
-    if (!validatePassword(state.password)) {
-      Alert.alert(
-        'Registration Error',
-        'Password must be at least 8 characters long and include one uppercase letter, one lowercase letter, one number, and one special character.'
-      );
-      return;
-    }
-
-    if (state.password !== state.confirmPassword) {
-      Alert.alert('Registration Error', 'Passwords do not match.');
-      return;
-    }
-
-    if (!validatePhone(state.phone)) {
-      Alert.alert('Registration Error', 'Phone number must be exactly 10 digits.');
-      return;
-    }
-
-    // שמירת המשתמש ב-context
-    login({
-      firstName: state.firstName,
-      lastName: state.lastName,
-      email: state.email,
-      phone: state.phone,
-      birthDate: state.birthDate,
-      address: state.address,
-    });
-
-    // ניווט לפרופיל עם הנתונים
-// אחרי ההרשמה
-    navigation.navigate('Profile', { user: userDetails });
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.header}>Registration</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        value={state.email}
-        onChangeText={(text) => handleInputChange('email', text)}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="First Name"
-        value={state.firstName}
-        onChangeText={(text) => handleInputChange('firstName', text)}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Last Name"
-        value={state.lastName}
-        onChangeText={(text) => handleInputChange('lastName', text)}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Phone Number"
-        value={state.phone}
-        onChangeText={(text) => handleInputChange('phone', text)}
-      />
+    <Formik
+      initialValues={{
+        firstName: '',
+        lastName: '',
+        email: '',
+        password: '',
+        confirmPassword: '',
+        phone: '',
+        birthDate: new Date(),
+        address: {
+          street: '',
+          city: '',
+          homeNumber: 0,
+        },
+      }}
+      validationSchema={validationSchema}
+      onSubmit={handleRegister}
+    >
+      {({ handleChange, handleBlur, handleSubmit, setFieldValue, values, errors, touched }) => (
+        <ScrollView contentContainerStyle={styles.container}>
+          <Text style={styles.header}>Registration</Text>
 
-      {/* לחצן בחירת תאריך */}
-      <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.input}>
-        <Text>{state.birthDate ? state.birthDate.toDateString() : 'Select Birth Date'}</Text>
-      </TouchableOpacity>
+          {/* First Name */}
+          <TextInput
+            style={[styles.input, touched.firstName && errors.firstName ? styles.errorInput : null]}
+            placeholder="First Name"
+            onChangeText={handleChange('firstName')}
+            onBlur={handleBlur('firstName')}
+            value={values.firstName}
+          />
+          <ErrorMessage name="firstName" component={Text} style={styles.errorText} />
 
-      {/* רכיב DateTimePicker */}
-      {showDatePicker && (
-        <DateTimePicker
-          value={state.birthDate || new Date()} // אם אין תאריך, נשתמש בתאריך הנוכחי
-          mode="date"
-          display="default"
-          onChange={handleDateChange}
-        />
+          {/* Last Name */}
+          <TextInput
+            style={[styles.input, touched.lastName && errors.lastName ? styles.errorInput : null]}
+            placeholder="Last Name"
+            onChangeText={handleChange('lastName')}
+            onBlur={handleBlur('lastName')}
+            value={values.lastName}
+          />
+          <ErrorMessage name="lastName" component={Text} style={styles.errorText} />
+
+          {/* Email */}
+          <TextInput
+            style={[styles.input, touched.email && errors.email ? styles.errorInput : null]}
+            placeholder="Email"
+            onChangeText={handleChange('email')}
+            onBlur={handleBlur('email')}
+            value={values.email}
+          />
+          <ErrorMessage name="email" component={Text} style={styles.errorText} />
+
+          {/* Phone */}
+          <TextInput
+            style={[styles.input, touched.phone && errors.phone ? styles.errorInput : null]}
+            placeholder="Phone"
+            onChangeText={handleChange('phone')}
+            onBlur={handleBlur('phone')}
+            value={values.phone}
+          />
+          <ErrorMessage name="phone" component={Text} style={styles.errorText} />
+
+          {/* Date Picker */}
+          <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.input}>
+            <Text>{values.birthDate ? values.birthDate.toDateString() : 'Select Birth Date'}</Text>
+          </TouchableOpacity>
+
+          {showDatePicker && (
+            <DateTimePicker
+              value={values.birthDate || new Date()}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onChange={(event: any, selectedDate?: Date) => {
+                setShowDatePicker(false); // Ensure picker closes after date selection
+                setFieldValue('birthDate', selectedDate || values.birthDate);
+              }}
+            />
+          )}
+          <ErrorMessage name="birthDate" component={Text} style={styles.errorText} />
+
+          {/* Password */}
+          <TextInput
+            style={[styles.input, touched.password && errors.password ? styles.errorInput : null]}
+            placeholder="Password"
+            secureTextEntry
+            onChangeText={handleChange('password')}
+            onBlur={handleBlur('password')}
+            value={values.password}
+          />
+          <ErrorMessage name="password" component={Text} style={styles.errorText} />
+
+          {/* Confirm Password */}
+          <TextInput
+            style={[styles.input, touched.confirmPassword && errors.confirmPassword ? styles.errorInput : null]}
+            placeholder="Confirm Password"
+            secureTextEntry
+            onChangeText={handleChange('confirmPassword')}
+            onBlur={handleBlur('confirmPassword')}
+            value={values.confirmPassword}
+          />
+          <ErrorMessage name="confirmPassword" component={Text} style={styles.errorText} />
+
+          {/* Address: Street */}
+          <TextInput
+            style={[styles.input, touched.street && errors.address?.street ? styles.errorInput : null]}
+            placeholder="Street Address"
+            onChangeText={handleChange('address.street')}
+            onBlur={handleBlur('address.street')}
+            value={values.address.street}
+          />
+          <ErrorMessage name="address.street" component={Text} style={styles.errorText} />
+
+          {/* Address: City */}
+          <TextInput
+            style={[styles.input, touched.city && errors.address?.city ? styles.errorInput : null]}
+            placeholder="City"
+            onChangeText={handleChange('address.city')}
+            onBlur={handleBlur('address.city')}
+            value={values.address.city}
+          />
+          <ErrorMessage name="address.city" component={Text} style={styles.errorText} />
+
+          {/* Address: Home Number */}
+          <TextInput
+            style={[styles.input, touched.homeNumber && errors.address?.homeNumber ? styles.errorInput : null]}
+            placeholder="Home Number"
+            keyboardType="numeric"
+            onChangeText={handleChange('address.homeNumber')}
+            onBlur={handleBlur('address.homeNumber')}
+            value={values.address.homeNumber.toString()}
+          />
+          <ErrorMessage name="address.homeNumber" component={Text} style={styles.errorText} />
+
+          {/* Submit Button */}
+          <Button title={loading ? 'Registering...' : 'Register'} onPress={handleSubmit} disabled={loading} />
+        </ScrollView>
       )}
-
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        secureTextEntry={true}
-        value={state.password}
-        onChangeText={(text) => handleInputChange('password', text)}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Confirm Password"
-        secureTextEntry={true}
-        value={state.confirmPassword}
-        onChangeText={(text) => handleInputChange('confirmPassword', text)}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Street Address"
-        value={state.address.street}
-        onChangeText={(text) =>
-          setState((prevState) => ({
-            ...prevState,
-            address: { ...prevState.address, street: text },
-          }))
-        }
-      />
-
-      <TextInput
-        style={styles.input}
-        placeholder="City"
-        value={state.address.city}
-        onChangeText={(text) =>
-          setState((prevState) => ({
-            ...prevState,
-            address: { ...prevState.address, city: text },
-          }))
-        }
-      />
-
-      <Button title="Register" onPress={handleSubmit} />
-    </ScrollView>
+    </Formik>
   );
 };
 
@@ -240,6 +234,13 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
     backgroundColor: '#fff',
     borderRadius: 5,
+  },
+  errorInput: {
+    borderColor: 'red',
+  },
+  errorText: {
+    color: 'red',
+    marginBottom: 10,
   },
 });
 

@@ -1,3 +1,5 @@
+//ProductContext.tsx
+
 import React, { createContext, useContext, ReactNode } from 'react';
 
 // Define Product interface

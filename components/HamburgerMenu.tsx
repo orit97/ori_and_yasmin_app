@@ -52,6 +52,10 @@ const HamburgerMenu = () => {
           <Icon name="lock" size={18} color="black" />
           <Text style={styles.menuItemText}>Login</Text>
         </TouchableOpacity>
+        <TouchableOpacity style={styles.menuItem} onPress={() => handleMenuPress('Profile')}>
+          <Icon name="user" size={18} color="black" />
+          <Text style={styles.menuItemText}>Profile</Text>
+        </TouchableOpacity>
 
         {/* Artistic Line Decoration */}
         <View style={styles.decorativeLine} />

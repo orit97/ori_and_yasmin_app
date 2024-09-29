@@ -1,3 +1,5 @@
+//Store.tsx 
+
 import { StyleSheet, Text, View, FlatList, TouchableOpacity, Image, Modal, TouchableWithoutFeedback } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import { useNavigation } from '@react-navigation/native';

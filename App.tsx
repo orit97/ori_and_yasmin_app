@@ -13,20 +13,22 @@ import Home from './pages/Home';
 import About from './pages/About';
 import Register from './pages/Register';
 import Store from './pages/Store';
-import Admin from './pages/Admin';
-import LoginPage from './pages/LoginPage';
+import LoginScreen  from './pages/LoginScreen';
 import HamburgerMenu from './components/HamburgerMenu';
 import ProductScreen from './pages/ProductScreen';
 import FavoritesScreen from './pages/FavoritesScreen';
 import CartScreen from './pages/CartScreen';
-import ProfileScreen from './pages/ProfileScreen'; // Import the profile screen
+import ProfileScreen from './pages/ProfileScreen'; 
 import { ProductProvider } from './contexts/ProductContext'; 
+import { UserProvider } from './contexts/UserContext';
+import AdminDashboard from './pages/Admin';
 
 const Stack = createStackNavigator();
 
 // Main App component
 export default function App() {
   return (
+  <UserProvider>
     <ProductProvider>
       <CartProvider>
         <SafeAreaView style={styles.container}>
@@ -36,18 +38,19 @@ export default function App() {
               <Stack.Screen name="Store" component={Store} />
               <Stack.Screen name="About" component={About} />
               <Stack.Screen name="Register" component={Register} />
-              <Stack.Screen name="Login" component={LoginPage} />
-              <Stack.Screen name="Admin" component={Admin} />
+              <Stack.Screen name="Login" component={LoginScreen} />
+              <Stack.Screen name="Admin" component={AdminDashboard} />
               <Stack.Screen name="HamburgerMenu" component={HamburgerMenu} />
               <Stack.Screen name="Product" component={ProductScreen} />
               <Stack.Screen name="Favorites" component={FavoritesScreen} />
               <Stack.Screen name="Cart" component={CartScreen} />
-              <Stack.Screen name="Profile" component={ProfileScreen} /> {/* Add ProfileScreen */}
+              <Stack.Screen name="Profile" component={ProfileScreen} /> 
             </Stack.Navigator>
           </NavigationContainer>
         </SafeAreaView>
       </CartProvider>
     </ProductProvider>
+  </UserProvider>
   );
 }
 
