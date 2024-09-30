@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import {Text, TextInput, Button, StyleSheet, Image, ScrollView, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { Text, TextInput, Button, StyleSheet, Image, Alert, View, FlatList, Switch, RefreshControl } from 'react-native';
 import * as ImagePicker from 'expo-image-picker'; // Import expo-image-picker
-import { postFormData } from '../api';  // Use the correct function for FormData
+import { postFormData, fetchData, updateData } from '../api';  // Use the correct function for FormData
 
 interface ProductData {
   name: string;
@@ -12,6 +12,12 @@ interface ProductData {
   currQty: string;
   discount?: string;
   category: string;
+  visibleInStore: boolean; // Add a new field for product visibility in store
+}
+
+interface Product extends ProductData {
+  _id: string;
+  imag: string;
 }
 
 const AdminDashboard: React.FC = () => {
@@ -24,41 +30,63 @@ const AdminDashboard: React.FC = () => {
     currQty: '',
     discount: '',
     category: '',
+    visibleInStore: false, // Default to false for new products
   });
 
   const [selectedImage, setSelectedImage] = useState<string | null>(null);  // Image as a string URL
   const [uploading, setUploading] = useState(false);
+  const [editingProductId, setEditingProductId] = useState<string | null>(null); // Store product ID when editing
+  const [products, setProducts] = useState<Product[]>([]); // State to store fetched products
+  const [loadingProducts, setLoadingProducts] = useState(true); // Loading state for fetching products
+  const [refreshing, setRefreshing] = useState(false); // Refresh control state
+
+  // Fetch products from the backend
+  const fetchProducts = async () => {
+    try {
+      setLoadingProducts(true);
+      const data = await fetchData('/products'); // Fetch the products from your server
+      setProducts(data); // Set the fetched products
+    } catch (error) {
+      console.error('Failed to fetch products:', error);
+      Alert.alert('Error', 'Failed to fetch products');
+    } finally {
+      setLoadingProducts(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  // Refresh function to reload products
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchProducts();
+    setRefreshing(false);
+  };
 
   // Requesting Permissions and Picking Image
   const pickImage = async () => {
-    // Request permission to access media library
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-    if (permissionResult.granted === false) {
+    if (!permissionResult.granted) {
       Alert.alert('Permission denied', 'You need to grant permission to access the media library.');
       return;
     }
 
-    // Open image picker
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images, // Only allow images
-      allowsEditing: true, // Let the user crop the image
-      quality: 1, // Highest quality
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 1,
     });
 
     if (!result.canceled && result.assets && result.assets[0]) {
-      // Set the image URI to state
       setSelectedImage(result.assets[0].uri);
     }
   };
 
-  // Handle adding a new product
-  const handleAddProduct = async () => {
-    if (
-      !newProduct.name || !newProduct.price || !newProduct.shortDesc || 
-      !newProduct.minQty || !newProduct.currQty || !newProduct.category || 
-      !selectedImage
-    ) {
+  // Handle adding or updating a product
+  const handleAddOrUpdateProduct = async () => {
+    if (!newProduct.name || !newProduct.price || !newProduct.shortDesc || !newProduct.minQty || !newProduct.currQty || !newProduct.category || !selectedImage) {
       alert('Please fill out all fields and select an image.');
       return;
     }
@@ -72,23 +100,31 @@ const AdminDashboard: React.FC = () => {
     formData.append('currQty', newProduct.currQty);
     formData.append('discount', newProduct.discount || '0');
     formData.append('category', newProduct.category);
+    formData.append('visibleInStore', newProduct.visibleInStore ? 'true' : 'false');
 
-    // Append the image file
     if (selectedImage) {
       const imageData: any = {
         uri: selectedImage,
-        type: 'image/jpeg', // Assuming JPEG; adjust based on the image format
-        name: 'product-image.jpg', // You can name it anything
+        type: 'image/jpeg',
+        name: 'product-image.jpg',
       };
       formData.append('image', imageData);
     }
 
     try {
       setUploading(true);
-      const response = await postFormData('/products', formData);  // Use postFormData here
-      console.log('Product added:', response);
-      // Show success message after the product is added successfully
-      Alert.alert('Success', 'Product added successfully!');
+
+      // Update if editing, otherwise add a new product
+      if (editingProductId) {
+        const response = await updateData(`/products/${editingProductId}`, formData);
+        console.log('Product updated:', response);
+        Alert.alert('Success', 'Product updated successfully!');
+      } else {
+        const response = await postFormData('/products', formData);
+        console.log('Product added:', response);
+        Alert.alert('Success', 'Product added successfully!');
+        setProducts((prevProducts) => [...prevProducts, response]); // Add the newly created product to the list
+      }
 
       // Reset form fields and image
       setNewProduct({
@@ -100,94 +136,169 @@ const AdminDashboard: React.FC = () => {
         currQty: '',
         discount: '',
         category: '',
+        visibleInStore: false,
       });
       setSelectedImage(null);
+      setEditingProductId(null); // Reset editing state
     } catch (error) {
-      console.error('Failed to add product:', error);
+      console.error('Failed to add/update product:', error);
+      Alert.alert('Error', 'Failed to add/update product');
     } finally {
       setUploading(false);
     }
   };
 
+  // Handle editing a product
+  const handleEditProduct = (product: Product) => {
+    setNewProduct({
+      name: product.name,
+      shortDesc: product.shortDesc,
+      longDesc: product.longDesc || '',
+      price: product.price.toString(),
+      minQty: product.minQty.toString(),
+      currQty: product.currQty.toString(),
+      discount: product.discount?.toString() || '',
+      category: product.category,
+      visibleInStore: product.visibleInStore,
+    });
+    setSelectedImage(product.imag);
+    setEditingProductId(product._id); // Set the product ID being edited
+  };
+
+  // Toggle visibility of a product in store
+  const toggleVisibility = async (product: Product) => {
+    try {
+      const updatedProduct = { ...product, visibleInStore: !product.visibleInStore };
+      await updateData(`/products/${product._id}`, updatedProduct);
+      setProducts((prevProducts) =>
+        prevProducts.map((p) => (p._id === product._id ? updatedProduct : p))
+      );
+    } catch (error) {
+      console.error('Failed to toggle visibility:', error);
+      Alert.alert('Error', 'Failed to toggle visibility');
+    }
+  };
+
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <View style={styles.container}>
       <Text style={styles.header}>Admin Dashboard</Text>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Product Name"
-        value={newProduct.name}
-        onChangeText={(text) => setNewProduct({ ...newProduct, name: text })}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Short Description"
-        value={newProduct.shortDesc}
-        onChangeText={(text) => setNewProduct({ ...newProduct, shortDesc: text })}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Long Description"
-        value={newProduct.longDesc}
-        onChangeText={(text) => setNewProduct({ ...newProduct, longDesc: text })}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Price"
-        keyboardType="numeric"
-        value={newProduct.price}
-        onChangeText={(text) => setNewProduct({ ...newProduct, price: text })}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Minimum Quantity"
-        keyboardType="numeric"
-        value={newProduct.minQty}
-        onChangeText={(text) => setNewProduct({ ...newProduct, minQty: text })}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Current Quantity"
-        keyboardType="numeric"
-        value={newProduct.currQty}
-        onChangeText={(text) => setNewProduct({ ...newProduct, currQty: text })}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Discount (%)"
-        keyboardType="numeric"
-        value={newProduct.discount}
-        onChangeText={(text) => setNewProduct({ ...newProduct, discount: text })}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Category"
-        value={newProduct.category}
-        onChangeText={(text) => setNewProduct({ ...newProduct, category: text })}
-      />
+      {/* List of Products */}
+      <Text style={styles.subHeader}>Existing Products</Text>
+      {loadingProducts ? (
+        <Text>Loading products...</Text>
+      ) : (
+        <FlatList
+          data={products}
+          keyExtractor={(item) => item._id}
+          renderItem={({ item }) => (
+            <View style={styles.productItem}>
+              <Image source={{ uri: item.imag }} style={styles.productImage} />
+              <Text style={styles.productName}>{item.name}</Text>
+              <Text style={styles.productPrice}>${item.price}</Text>
 
-      {/* Button to select image */}
-      <Button title="Select Image" onPress={pickImage} />
+              {/* Edit Button */}
+              <Button title="Edit" onPress={() => handleEditProduct(item)} />
 
-      {selectedImage && (
-        <Image source={{ uri: selectedImage }} style={styles.selectedImage} />
+              {/* Toggle Visibility */}
+              <View style={styles.switchContainer}>
+                <Text>Visible in Store:</Text>
+                <Switch
+                  value={item.visibleInStore}
+                  onValueChange={() => toggleVisibility(item)}
+                />
+              </View>
+            </View>
+          )}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />} // Add pull-to-refresh functionality
+        />
       )}
 
-      <Button title="Add Product" onPress={handleAddProduct} />
+      {/* Form to add or edit a product */}
+      <FlatList
+        ListHeaderComponent={<Text style={styles.subHeader}>{editingProductId ? 'Edit Product' : 'Add a New Product'}</Text>}
+        data={[]} // Empty data to allow scrolling
+        ListEmptyComponent={
+          <View>
+            <TextInput
+              style={styles.input}
+              placeholder="Product Name"
+              value={newProduct.name}
+              onChangeText={(text) => setNewProduct({ ...newProduct, name: text })}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Short Description"
+              value={newProduct.shortDesc}
+              onChangeText={(text) => setNewProduct({ ...newProduct, shortDesc: text })}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Long Description"
+              value={newProduct.longDesc}
+              onChangeText={(text) => setNewProduct({ ...newProduct, longDesc: text })}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Price"
+              keyboardType="numeric"
+              value={newProduct.price}
+              onChangeText={(text) => setNewProduct({ ...newProduct, price: text })}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Minimum Quantity"
+              keyboardType="numeric"
+              value={newProduct.minQty}
+              onChangeText={(text) => setNewProduct({ ...newProduct, minQty: text })}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Current Quantity"
+              keyboardType="numeric"
+              value={newProduct.currQty}
+              onChangeText={(text) => setNewProduct({ ...newProduct, currQty: text })}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Discount (%)"
+              keyboardType="numeric"
+              value={newProduct.discount}
+              onChangeText={(text) => setNewProduct({ ...newProduct, discount: text })}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Category"
+              value={newProduct.category}
+              onChangeText={(text) => setNewProduct({ ...newProduct, category: text })}
+            />
 
-      {uploading && <Text>Uploading...</Text>}
-    </ScrollView>
+            <Button title="Select Image" onPress={pickImage} />
+            {selectedImage && <Image source={{ uri: selectedImage }} style={styles.selectedImage} />}
+            <Button title={editingProductId ? "Update Product" : "Add Product"} onPress={handleAddOrUpdateProduct} />
+            {uploading && <Text>Uploading...</Text>}
+          </View>
+        }
+      />
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
     padding: 20,
   },
   header: {
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,
+  },
+  subHeader: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginTop: 20,
+    marginBottom: 10,
   },
   input: {
     borderWidth: 1,
@@ -199,6 +310,26 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     marginBottom: 10,
+  },
+  productItem: {
+    marginBottom: 20,
+  },
+  productImage: {
+    width: 100,
+    height: 100,
+  },
+  productName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  productPrice: {
+    fontSize: 14,
+    color: '#888',
+  },
+  switchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 10,
   },
 });
 
