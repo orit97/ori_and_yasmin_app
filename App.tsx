@@ -10,6 +10,7 @@ import CartProvider from './contexts/CartContext';
 
 // Import pages and components
 import Home from './pages/Home';
+import OnboardingScreen from './pages/OnboardingScreen'; // ייבוא מסך ה-Onboarding
 import About from './pages/About';
 import Register from './pages/Register';
 import Store from './pages/Store';
@@ -34,6 +35,8 @@ export default function App() {
         <SafeAreaView style={styles.container}>
           <NavigationContainer>
             <Stack.Navigator screenOptions={{ headerShown: false }}>
+                        {/* תחילה מסך ה-Onboarding */}
+              <Stack.Screen name="Onboarding" component={OnboardingScreen} />
               <Stack.Screen name="Home" component={Home} />
               <Stack.Screen name="Store" component={Store} />
               <Stack.Screen name="About" component={About} />

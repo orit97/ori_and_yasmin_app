@@ -1,8 +1,18 @@
-import { StyleSheet, Text, View, FlatList, TouchableOpacity, Image } from 'react-native';
 import React, { useState, useEffect } from 'react';
+import {
+  StyleSheet,
+  Text,
+  View,
+  FlatList,
+  TouchableOpacity,
+  Image,
+  Modal,
+  Alert,
+} from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useProducts } from '../contexts/ProductContext';
+import LottieView from 'lottie-react-native'; // Lottie
 
 interface Product {
   id: number;
@@ -20,6 +30,7 @@ interface Product {
 const CartScreen: React.FC = () => {
   const [cartItems, setCartItems] = useState<Product[]>([]);
   const [totalPrice, setTotalPrice] = useState<number>(0);
+  const [isSuccessModalVisible, setSuccessModalVisible] = useState(false); // Success modal visibility
   const { products } = useProducts();
 
   useFocusEffect(
@@ -33,7 +44,9 @@ const CartScreen: React.FC = () => {
 
             // Calculate total price
             const total = cart.reduce((sum: number, product: Product) => {
-              const price = product.discount ? product.price * (1 - product.discount / 100) : product.price;
+              const price = product.discount
+                ? product.price * (1 - product.discount / 100)
+                : product.price;
               return sum + price * product.currQty;
             }, 0);
             setTotalPrice(total);
@@ -48,12 +61,12 @@ const CartScreen: React.FC = () => {
   );
 
   const findProductById = (productId: number): Product | undefined => {
-    return products.find(product => product.id === productId);
+    return products.find((product) => product.id === productId);
   };
 
   const handleRemoveFromCart = async (productId: number) => {
     try {
-      const newCart = cartItems.filter(item => item.id !== productId);
+      const newCart = cartItems.filter((item) => item.id !== productId);
       await AsyncStorage.setItem('cart', JSON.stringify(newCart));
       setCartItems(newCart);
       updateTotalPrice(newCart);
@@ -63,14 +76,20 @@ const CartScreen: React.FC = () => {
   };
 
   const handleIncreaseQty = async (productId: number) => {
-    const updatedCart = cartItems.map(item => {
+    const updatedCart = cartItems.map((item) => {
       if (item.id === productId) {
-        const availableStock = findProductById(productId)?.currQty;
+        const product = findProductById(productId);
 
-        if (availableStock && item.currQty < availableStock) {
-          return { ...item, currQty: item.currQty + 1 };
+        if (product && product.currQty !== undefined) {
+          const availableStock = product.currQty;
+
+          if (item.currQty < availableStock) {
+            return { ...item, currQty: item.currQty + 1 };
+          } else {
+            Alert.alert('Stock Limit', `Only ${availableStock} items available in stock.`);
+          }
         } else {
-          alert('Cannot add more items than available in stock.');
+          console.error('Product not found or stock not available.');
         }
       }
       return item;
@@ -82,8 +101,10 @@ const CartScreen: React.FC = () => {
   };
 
   const handleDecreaseQty = async (productId: number) => {
-    const updatedCart = cartItems.map(item =>
-      item.id === productId && item.currQty > 1 ? { ...item, currQty: item.currQty - 1 } : item
+    const updatedCart = cartItems.map((item) =>
+      item.id === productId && item.currQty > 1
+        ? { ...item, currQty: item.currQty - 1 }
+        : item
     );
     setCartItems(updatedCart);
     await AsyncStorage.setItem('cart', JSON.stringify(updatedCart));
@@ -92,10 +113,18 @@ const CartScreen: React.FC = () => {
 
   const updateTotalPrice = (cart: Product[]) => {
     const total = cart.reduce((sum, product) => {
-      const price = product.discount ? product.price * (1 - product.discount / 100) : product.price;
+      const price = product.discount
+        ? product.price * (1 - product.discount / 100)
+        : product.price;
       return sum + price * product.currQty;
     }, 0);
     setTotalPrice(total);
+  };
+
+  const handleCheckout = () => {
+    setSuccessModalVisible(true);
+    setCartItems([]);
+    AsyncStorage.removeItem('cart');
   };
 
   const renderItem = ({ item }: { item: Product }) => (
@@ -107,22 +136,33 @@ const CartScreen: React.FC = () => {
           {item.discount && item.price ? (
             <>
               <Text style={styles.originalPrice}>{item.price}₪</Text>
-              <Text style={styles.discountedPrice}> {(item.price * (1 - item.discount / 100)).toFixed(2)}₪</Text>
+              <Text style={styles.discountedPrice}>
+                {(item.price * (1 - item.discount / 100)).toFixed(2)}₪
+              </Text>
             </>
           ) : (
             item.price && <Text style={styles.discountedPrice}>{item.price}₪</Text>
           )}
         </Text>
         <View style={styles.qtyContainer}>
-          <TouchableOpacity onPress={() => handleDecreaseQty(item.id)} style={styles.qtyButton}>
+          <TouchableOpacity
+            onPress={() => handleDecreaseQty(item.id)}
+            style={styles.qtyButton}
+          >
             <Text style={styles.qtyButtonText}>−</Text>
           </TouchableOpacity>
           <Text style={styles.qtyText}>{item.currQty}</Text>
-          <TouchableOpacity onPress={() => handleIncreaseQty(item.id)} style={styles.qtyButton}>
+          <TouchableOpacity
+            onPress={() => handleIncreaseQty(item.id)}
+            style={styles.qtyButton}
+          >
             <Text style={styles.qtyButtonText}>+</Text>
           </TouchableOpacity>
         </View>
-        <TouchableOpacity onPress={() => handleRemoveFromCart(item.id)} style={styles.removeButton}>
+        <TouchableOpacity
+          onPress={() => handleRemoveFromCart(item.id)}
+          style={styles.removeButton}
+        >
           <Text style={styles.removeButtonText}>Remove</Text>
         </TouchableOpacity>
       </View>
@@ -134,7 +174,9 @@ const CartScreen: React.FC = () => {
       <Text style={styles.header}>Cart</Text>
       {cartItems.length === 0 ? (
         <View style={styles.emptyCartContainer}>
-          <Text style={styles.emptyCartText}>Your cart is empty. Add items to get started!</Text>
+          <Text style={styles.emptyCartText}>
+            Your cart is empty. Add items to get started!
+          </Text>
         </View>
       ) : (
         <>
@@ -146,12 +188,38 @@ const CartScreen: React.FC = () => {
           />
           <View style={styles.totalContainer}>
             <Text style={styles.totalText}>Total: {totalPrice.toFixed(2)}₪</Text>
-            <TouchableOpacity style={styles.checkoutButton}>
+            <TouchableOpacity
+              style={styles.checkoutButton}
+              onPress={handleCheckout}
+            >
               <Text style={styles.checkoutButtonText}>Proceed to Checkout</Text>
             </TouchableOpacity>
           </View>
         </>
       )}
+
+      {/* Success Modal with Animation */}
+      <Modal
+        visible={isSuccessModalVisible}
+        transparent={true}
+        animationType="slide"
+      >
+        <View style={styles.successContainer}>
+          <LottieView
+            source={require('../assets/Animations/success.json')} // Correct path to the downloaded file
+            autoPlay
+            loop={false}
+            style={styles.successAnimation}
+          />
+          <Text style={styles.successText}>Payment Successful! 🎉</Text>
+          <TouchableOpacity
+            style={styles.successButton}
+            onPress={() => setSuccessModalVisible(false)}
+          >
+            <Text style={styles.successButtonText}>Close</Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -287,6 +355,35 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#666',
     textAlign: 'center',
+  },
+  successContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  successAnimation: {
+    width: 500,
+    height: 250,
+  },
+  successText: {
+    fontSize: 25,
+    fontWeight: 'bold',
+    color: '#4CAF50',
+    marginTop: 5,
+    marginBottom: 300,
+  },
+  successButton: {
+    backgroundColor: '#4CAF50',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+
+  },
+  successButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 
