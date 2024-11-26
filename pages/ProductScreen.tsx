@@ -16,14 +16,10 @@ type ProductScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Prod
 interface Product {
   id: number;
   name: string;
-  shortDesc: string;
-  longDesc?: string;
-  imag: any;
-  minQty: number;
-  currQty: number;  // מייצג את הכמות המקסימלית במלאי
+  imag: string;
+  currQty: number;
   price: number;
   discount?: number;
-  category: string;
 }
 
 export default function Product() {
@@ -40,35 +36,40 @@ export default function Product() {
       const existingProductIndex = cart.findIndex((p: Product) => p.id === item.id);
 
       if (existingProductIndex !== -1) {
-        // אם המוצר כבר בעגלה, נוודא שלא נחרוג מהמלאי המקסימלי
-        if (cart[existingProductIndex].currQty < item.currQty) {
-          cart[existingProductIndex].currQty += 1;
+        const cartProduct = cart[existingProductIndex];
+        if (cartProduct.currQty < cartProduct.qtyLimit) {
+          cartProduct.currQty += 1;
         } else {
-          alert('לא ניתן להוסיף יותר יחידות מהמלאי הזמין.');
+          alert('You cannot add more than the available stock.');
           return;
         }
       } else {
-        // אם המוצר לא בעגלה, נוסיף אותו עם כמות התחלתית של 1
         if (item.currQty > 0) {
-          cart.push({ ...item, currQty: 1 });
+          cart.push({
+            id: item.id,
+            name: item.name,
+            imag: item.imag,
+            price: item.price,
+            discount: item.discount,
+            qtyLimit: item.currQty, // Original stock quantity
+            currQty: 1, // Initial quantity in the cart
+          });
         } else {
-          alert('המוצר אינו זמין במלאי.');
+          alert('This product is out of stock.');
           return;
         }
       }
 
       await AsyncStorage.setItem('cart', JSON.stringify(cart));
-      console.log('Product added to cart:', cart);
+      console.log('Cart updated:', cart);
 
-      // שינוי צבע הכפתור לירוק לאחר הוספה לעגלה והחזרתו לצבע המקורי לאחר חצי שנייה
       setButtonGreen(true);
       setAddedToCart(true);
 
       setTimeout(() => {
         setButtonGreen(false);
-        setAddedToCart(false); // אפשרות ללחוץ על הכפתור שוב
+        setAddedToCart(false);
       }, 500);
-
     } catch (error) {
       console.error('Failed to add item to cart', error);
     }
@@ -78,22 +79,13 @@ export default function Product() {
     <>
       <Navbar />
       <ScrollView contentContainerStyle={styles.container}>
-        <Image source={item.imag} style={styles.productImage} />
+        <Image source={{ uri: item.imag }} style={styles.productImage} />
         <Text style={styles.productName}>{item.name}</Text>
         <Text style={styles.productPrice}>{item.price}₪</Text>
-        {item.discount && (
-          <Text style={styles.productDiscount}>Discount: {item.discount}%</Text>
-        )}
-        <Text style={styles.productShortDesc}>{item.shortDesc}</Text>
-        {item.longDesc ? (
-          <Text style={styles.productLongDesc}>{item.longDesc}</Text>
-        ) : null}
+        {item.discount && <Text style={styles.productDiscount}>Discount: {item.discount}%</Text>}
 
         <TouchableOpacity
-          style={[
-            styles.addToCartButton,
-            buttonGreen ? styles.buttonGreen : null,
-          ]}
+          style={[styles.addToCartButton, buttonGreen ? styles.buttonGreen : null]}
           onPress={handleAddToCart}
         >
           <Text style={styles.buttonText}>
@@ -116,7 +108,6 @@ const styles = StyleSheet.create({
     height: 300,
     resizeMode: 'contain',
     marginBottom: 20,
-    
   },
   productName: {
     fontSize: 24,
@@ -132,15 +123,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: 'red',
     marginBottom: 10,
-  },
-  productShortDesc: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 10,
-  },
-  productLongDesc: {
-    fontSize: 14,
-    color: '#666',
   },
   addToCartButton: {
     marginTop: 20,

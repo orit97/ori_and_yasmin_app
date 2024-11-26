@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -7,31 +7,26 @@ import {
   TouchableOpacity,
   Image,
   Modal,
-  Alert,
+  Alert
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useProducts } from '../contexts/ProductContext';
-import LottieView from 'lottie-react-native'; // Lottie
+import LottieView from 'lottie-react-native'; // Lottie animation
 
-interface Product {
+interface CartProduct {
   id: number;
   name: string;
-  shortDesc: string;
-  longDesc?: string;
-  imag: any;
-  minQty: number;
-  currQty: number;
+  imag: string;
   price: number;
   discount?: number;
-  category: string;
+  currQty: number;
+  qtyLimit: number; // Original stock quantity
 }
 
 const CartScreen: React.FC = () => {
-  const [cartItems, setCartItems] = useState<Product[]>([]);
+  const [cartItems, setCartItems] = useState<CartProduct[]>([]);
   const [totalPrice, setTotalPrice] = useState<number>(0);
   const [isSuccessModalVisible, setSuccessModalVisible] = useState(false); // Success modal visibility
-  const { products } = useProducts();
 
   useFocusEffect(
     React.useCallback(() => {
@@ -43,7 +38,7 @@ const CartScreen: React.FC = () => {
             setCartItems(cart);
 
             // Calculate total price
-            const total = cart.reduce((sum: number, product: Product) => {
+            const total = cart.reduce((sum: number, product: CartProduct) => {
               const price = product.discount
                 ? product.price * (1 - product.discount / 100)
                 : product.price;
@@ -57,12 +52,8 @@ const CartScreen: React.FC = () => {
       };
 
       loadCartItems();
-    }, [products])
+    }, [])
   );
-
-  const findProductById = (productId: number): Product | undefined => {
-    return products.find((product) => product.id === productId);
-  };
 
   const handleRemoveFromCart = async (productId: number) => {
     try {
@@ -78,23 +69,17 @@ const CartScreen: React.FC = () => {
   const handleIncreaseQty = async (productId: number) => {
     const updatedCart = cartItems.map((item) => {
       if (item.id === productId) {
-        const product = findProductById(productId);
-
-        if (product && product.currQty !== undefined) {
-          const availableStock = product.currQty;
-
-          if (item.currQty < availableStock) {
-            return { ...item, currQty: item.currQty + 1 };
-          } else {
-            Alert.alert('Stock Limit', `Only ${availableStock} items available in stock.`);
-          }
+        if (item.currQty < item.qtyLimit) {
+          return { ...item, currQty: item.currQty + 1 };
         } else {
-          console.error('Product not found or stock not available.');
+          Alert.alert(
+            'Stock Limit Reached',
+            `You cannot add more than ${item.qtyLimit} units of ${item.name} to the cart.`
+          );
         }
       }
       return item;
     });
-
     setCartItems(updatedCart);
     await AsyncStorage.setItem('cart', JSON.stringify(updatedCart));
     updateTotalPrice(updatedCart);
@@ -111,7 +96,7 @@ const CartScreen: React.FC = () => {
     updateTotalPrice(updatedCart);
   };
 
-  const updateTotalPrice = (cart: Product[]) => {
+  const updateTotalPrice = (cart: CartProduct[]) => {
     const total = cart.reduce((sum, product) => {
       const price = product.discount
         ? product.price * (1 - product.discount / 100)
@@ -127,22 +112,15 @@ const CartScreen: React.FC = () => {
     AsyncStorage.removeItem('cart');
   };
 
-  const renderItem = ({ item }: { item: Product }) => (
+  const renderItem = ({ item }: { item: CartProduct }) => (
     <View style={styles.productCard}>
-      <Image source={item.imag} style={styles.productImage} />
+      <Image source={{ uri: item.imag }} style={styles.productImage} />
       <View style={styles.productInfo}>
         <Text style={styles.productName}>{item.name}</Text>
         <Text style={styles.productPrice}>
-          {item.discount && item.price ? (
-            <>
-              <Text style={styles.originalPrice}>{item.price}₪</Text>
-              <Text style={styles.discountedPrice}>
-                {(item.price * (1 - item.discount / 100)).toFixed(2)}₪
-              </Text>
-            </>
-          ) : (
-            item.price && <Text style={styles.discountedPrice}>{item.price}₪</Text>
-          )}
+          {item.discount
+            ? `${(item.price * (1 - item.discount / 100)).toFixed(2)}₪`
+            : `${item.price}₪`}
         </Text>
         <View style={styles.qtyContainer}>
           <TouchableOpacity
@@ -183,7 +161,7 @@ const CartScreen: React.FC = () => {
           <FlatList
             data={cartItems}
             renderItem={renderItem}
-            keyExtractor={(item) => (item.id ? item.id.toString() : Math.random().toString())}
+            keyExtractor={(item) => item.id.toString()}
             contentContainerStyle={styles.flatListContent}
           />
           <View style={styles.totalContainer}>
@@ -198,7 +176,6 @@ const CartScreen: React.FC = () => {
         </>
       )}
 
-      {/* Success Modal with Animation */}
       <Modal
         visible={isSuccessModalVisible}
         transparent={true}
@@ -206,7 +183,7 @@ const CartScreen: React.FC = () => {
       >
         <View style={styles.successContainer}>
           <LottieView
-            source={require('../assets/Animations/success.json')} // Correct path to the downloaded file
+            source={require('../assets/Animations/success.json')}
             autoPlay
             loop={false}
             style={styles.successAnimation}
@@ -270,17 +247,6 @@ const styles = StyleSheet.create({
   productPrice: {
     fontSize: 16,
     color: '#7C8139',
-  },
-  originalPrice: {
-    fontSize: 14,
-    color: '#999',
-    textDecorationLine: 'line-through',
-    marginRight: 5,
-  },
-  discountedPrice: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#E53935',
   },
   qtyContainer: {
     flexDirection: 'row',
@@ -378,7 +344,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 5,
-
   },
   successButtonText: {
     color: '#fff',

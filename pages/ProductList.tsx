@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, Image, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import { StoreItem } from '../types/StoreItem';
+import { StoreItem } from '../types/StoreItem'; // Adjust this path accordingly
 
 type ProductListProps = {
   products: StoreItem[];
@@ -14,13 +14,19 @@ const ProductList: React.FC<ProductListProps> = ({ products, onProductPress, onF
     <FlatList
       data={products}
       keyExtractor={(item) => item.id.toString()}
+      numColumns={2}
       renderItem={({ item }) => (
         <View style={styles.productContainer}>
           <TouchableOpacity style={styles.productDetails} onPress={() => onProductPress(item)}>
             <Image source={{ uri: item.imag }} style={styles.productImage} />
             <View style={styles.productTextContainer}>
               <Text style={styles.productName}>{item.name}</Text>
-              <Text style={styles.productPrice}>${item.price}</Text>
+              <Text style={styles.productPrice}>{item.price}₪</Text>
+              {item.discount && (
+                <View style={styles.discountBadge}>
+                  <Text style={styles.discountText}>{item.discount}% OFF</Text>
+                </View>
+              )}
             </View>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => onFavoritePress(item.id)}>
@@ -32,16 +38,15 @@ const ProductList: React.FC<ProductListProps> = ({ products, onProductPress, onF
           </TouchableOpacity>
         </View>
       )}
+      contentContainerStyle={styles.flatListContent}
     />
   );
 };
 
 const styles = StyleSheet.create({
   productContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flex: 1,
     margin: 10,
-    padding: 10,
     backgroundColor: '#fff',
     borderRadius: 10,
     shadowColor: '#000',
@@ -50,35 +55,50 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   productDetails: {
-    flexDirection: 'row',
-    flex: 1,
+    flexDirection: 'column',
+    alignItems: 'center',
+    padding: 10,
   },
   productImage: {
-    width: 100,
-    height: 100,
+    width: '100%',
+    height: 150,
     borderRadius: 10,
+    resizeMode: 'cover',
   },
   productTextContainer: {
-    flex: 1,
-    marginLeft: 10,
-    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 10,
   },
   productName: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
-    marginVertical: 5,
   },
   productPrice: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#888',
+  },
+  discountBadge: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    backgroundColor: '#FF6347',
+    padding: 5,
+    borderRadius: 5,
+  },
+  discountText: {
+    color: 'white',
+    fontWeight: 'bold',
   },
   favoriteIcon: {
     color: '#ccc',
-    marginLeft: 10,
+    marginTop: 10,
   },
   favoriteIconActive: {
     color: '#f00',
-    marginLeft: 10,
+    marginTop: 10,
+  },
+  flatListContent: {
+    paddingHorizontal: 10,
   },
 });
 

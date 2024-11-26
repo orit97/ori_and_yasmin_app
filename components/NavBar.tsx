@@ -12,7 +12,7 @@ type RootStackParamList = {
   About: undefined;
   Login: undefined;
   SignIn: undefined;
-  Favorites: undefined;
+  Wishlist: undefined;
   Cart: undefined;
   HamburgerMenu: undefined;
 };
@@ -69,7 +69,7 @@ export default function Navbar() {
       </View>
 
       <View style={styles.iconsContainer}>
-        <TouchableOpacity onPress={() => navigation.navigate('Favorites')}>
+        <TouchableOpacity onPress={() => navigation.navigate('Wishlist')}>
           <Icon name="heart" size={24} style={styles.icon} color="#6B4F36" />
         </TouchableOpacity>
         <View style={styles.cartIconContainer}>

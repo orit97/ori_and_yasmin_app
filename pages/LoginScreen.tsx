@@ -1,14 +1,15 @@
 // src/pages/LoginScreen.tsx
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
-import { useUser } from '../contexts/UserContext'; 
-import { postData } from '../api'; 
-import { useNavigation } from '@react-navigation/native'; 
+import { useUser } from '../contexts/UserContext';
+import { useLoading } from '../contexts/LoadingContext';
+import { postData } from '../api';
+import { useNavigation } from '@react-navigation/native';
 
 const LoginScreen: React.FC = () => {
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
-  const [loading, setLoading] = useState<boolean>(false);
+  const { loading, setLoading } = useLoading(); // Global loading state
   const { user, login } = useUser();
   const navigation = useNavigation();
 
@@ -22,7 +23,7 @@ const LoginScreen: React.FC = () => {
     try {
       const userData = await postData('/login', { email, password });
       console.log('UserData fetched from server:', userData); // Debugging log
-      login(userData.user); 
+      login(userData.user);
     } catch (error) {
       handleLoginError(error);
     } finally {
@@ -35,7 +36,7 @@ const LoginScreen: React.FC = () => {
       navigateAfterLogin(user.role);
       console.log('User updated:', user);
     }
-  }, [user]); // Only navigate after the user state is updated
+  }, [user]);
 
   const navigateAfterLogin = (role: string) => {
     if (role === 'admin') {

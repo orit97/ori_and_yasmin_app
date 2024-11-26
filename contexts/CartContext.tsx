@@ -1,13 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Define the CartItem interface for cart item structure
 interface CartItem {
   productId: number;
   quantity: number;
 }
 
-// Define the CartContextProps interface for context properties
 interface CartContextProps {
   cart: CartItem[];
   addToCart: (productId: number) => void;
@@ -16,20 +14,16 @@ interface CartContextProps {
   cartCount: number;
 }
 
-// Define the CartProviderProps interface for provider properties
 interface CartProviderProps {
   children: ReactNode;
 }
 
-// Create the CartContext with initial value as undefined
 const CartContext = createContext<CartContextProps | undefined>(undefined);
 
-// Define the CartProvider component
 const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartCount, setCartCount] = useState<number>(0);
 
-  // Load the cart from AsyncStorage when the component mounts
   useEffect(() => {
     const loadCart = async () => {
       try {
@@ -40,20 +34,18 @@ const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
           updateCartCount(parsedCart);
         }
       } catch (error) {
-        console.error('Failed to load cart from storage', error);
+        console.error('Failed to load cart from storage:', error);
       }
     };
 
     loadCart();
   }, []);
 
-  // Update the total count of items in the cart
   const updateCartCount = (cartItems: CartItem[]) => {
     const count = cartItems.reduce((total, item) => total + item.quantity, 0);
     setCartCount(count);
   };
 
-  // Add a product to the cart
   const addToCart = async (productId: number) => {
     const existingItemIndex = cart.findIndex(item => item.productId === productId);
     let updatedCart;
@@ -73,12 +65,12 @@ const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
     try {
       await AsyncStorage.setItem('cart', JSON.stringify(updatedCart));
+      console.log('Item added to cart:', updatedCart);
     } catch (error) {
-      console.error('Failed to save cart to storage', error);
+      console.error('Failed to save cart to storage:', error);
     }
   };
 
-  // Remove a product from the cart
   const removeFromCart = async (productId: number) => {
     const updatedCart = cart.filter(item => item.productId !== productId);
     setCart(updatedCart);
@@ -87,11 +79,10 @@ const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     try {
       await AsyncStorage.setItem('cart', JSON.stringify(updatedCart));
     } catch (error) {
-      console.error('Failed to remove item from cart', error);
+      console.error('Failed to remove item from cart:', error);
     }
   };
 
-  // Clear the entire cart
   const clearCart = async () => {
     setCart([]);
     setCartCount(0);
@@ -99,11 +90,10 @@ const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     try {
       await AsyncStorage.removeItem('cart');
     } catch (error) {
-      console.error('Failed to clear cart', error);
+      console.error('Failed to clear cart:', error);
     }
   };
 
-  // Provide the cart context to children components
   return (
     <CartContext.Provider value={{ cart, addToCart, removeFromCart, clearCart, cartCount }}>
       {children}
@@ -111,7 +101,6 @@ const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   );
 };
 
-// Custom hook to use the cart context
 export const useCart = () => {
   const context = useContext(CartContext);
   if (!context) {
